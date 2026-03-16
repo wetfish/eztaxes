@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eztaxes-app
+    restart: unless-stopped
+    working_dir: /var/www/laravel
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./:/var/www
+    networks:
+      - eztaxes
+
+  nginx:
+    image: nginx:alpine
+    container_name: eztaxes-nginx
+    restart: unless-stopped
+    ports:
+      - "8010:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - eztaxes
+
+  db:
+    image: mysql:8.0
+    container_name: eztaxes-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: eztaxes
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: eztaxes
+    ports:
+      - "3446:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - eztaxes
+
+networks:
+  eztaxes:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local

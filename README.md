@@ -30,14 +30,18 @@ cd eztaxes
 
 ### Environment configuration
 
+When running via Docker, update your `laravel/.env` to match the container names:
+
 ```ini
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=eztaxes-db
 DB_PORT=3306
 DB_DATABASE=eztaxes
-DB_USERNAME=root
+DB_USERNAME=eztaxes
 DB_PASSWORD=secret
 ```
+
+From the host machine, the database is accessible on port `3446` (mapped to avoid conflicts with other projects).
 
 ### PHP dependencies
 
@@ -211,33 +215,57 @@ GET    /review/{year}                   → Unmatched transaction review queue
 ## Directory Structure
 
 ```text
-app/
-  Models/         → TaxYear, Bucket, BucketPattern, Transaction, Import
-  Services/       → TransactionMatcher, CsvImporter, TaxYearCalculator
-  Http/
-    Controllers/  → DashboardController, TaxYearController,
-                    BucketController, PatternController,
-                    ImportController, ReviewController
-resources/
-  views/
-    layouts/      → app.blade.php (main layout w/ nav)
-    dashboard/    → index.blade.php
-    tax-years/    → show.blade.php, transactions.blade.php
-    buckets/      → index.blade.php, patterns.blade.php
-    imports/      → create.blade.php, show.blade.php
-    review/       → index.blade.php
+eztaxes/
+  README.md
+  Dockerfile
+  docker-compose.yml
+  docker/
+    nginx/        → default.conf
+    php/          → custom.ini
+  laravel/
+    app/
+      Models/         → TaxYear, Bucket, BucketPattern, Transaction, Import
+      Services/       → TransactionMatcher, CsvImporter, TaxYearCalculator
+      Http/
+        Controllers/  → DashboardController, TaxYearController,
+                        BucketController, PatternController,
+                        ImportController, ReviewController
+    resources/
+      views/
+        layouts/      → app.blade.php (main layout w/ nav)
+        dashboard/    → index.blade.php
+        tax-years/    → show.blade.php, transactions.blade.php
+        buckets/      → index.blade.php, patterns.blade.php
+        imports/      → create.blade.php, show.blade.php
+        review/       → index.blade.php
 ```
 
 ## Docker Environment
 
-Four containers:
+Three services defined in `docker-compose.yml`:
 
-- **app** — PHP 8.5 FPM with Laravel extensions and Composer
-- **web** — Nginx serving the `public/` directory, proxying PHP to the app container
-- **db** — MySQL 8.0
-- **node** — For Vite/Tailwind asset builds (can be a build stage rather than persistent)
+| Container | Image | Purpose | Ports |
+|-----------|-------|---------|-------|
+| eztaxes-app | php:8.5-fpm (custom) | PHP-FPM with Laravel extensions, Composer, Redis | 9000 (internal) |
+| eztaxes-nginx | nginx:alpine | Serves `laravel/public/`, proxies PHP to app | 8010 → 80 |
+| eztaxes-db | mysql:8.0 | MySQL database | 3446 → 3306 |
 
-Dockerfile and docker-compose.yml to be adapted from an existing project (pending).
+Additional config files:
+
+| File | Purpose |
+|------|---------|
+| `docker/nginx/default.conf` | Nginx server block pointing to `laravel/public` |
+| `docker/php/custom.ini` | PHP overrides (memory_limit = 512M) |
+
+Start the environment:
+
+```bash
+docker compose up -d
+```
+
+Access the app at `http://localhost:8010`.
+
+Dockerfile and docker-compose.yml adapted from an existing project.
 
 ## Development Notes
 
@@ -246,6 +274,15 @@ Dockerfile and docker-compose.yml to be adapted from an existing project (pendin
 This project is being built with the assistance of Claude (Anthropic). During initial planning, we identified a rendering issue in the Claude chat interface where consecutive code blocks without explicit language tags (e.g., bare ` ``` ` instead of ` ```bash `) would merge into a single block in the rendered output. The fix is to always use an explicit language identifier on every code block (e.g., `bash`, `ini`, `text`, `php`) and include a descriptive title line before each block.
 
 This note is preserved here so the convention is maintained throughout project documentation.
+
+When referencing files for the developer to open, always provide full file paths relative to the repo root that can be opened directly in VSCode/Codium. For example:
+
+```bash
+codium README.md
+codium docker/php/custom.ini
+```
+
+This convention ensures the developer can copy-paste commands directly without needing to figure out where a file lives.
 
 ### Composer + PHP 8.5 Compatibility
 
