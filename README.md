@@ -21,13 +21,6 @@ The regex matching system is intended to be phased out over time in favor of a m
 
 ## Setup
 
-### Create the project
-
-```bash
-composer create-project laravel/laravel:^12.0 eztaxes
-cd eztaxes
-```
-
 ### Environment configuration
 
 When running via Docker, update your `laravel/.env` to match the container names:
@@ -83,6 +76,16 @@ php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php
 php -r "unlink('composer-setup.php');"
 sudo mv composer.phar /usr/local/bin/composer
+```
+
+## Migrations
+
+The default Laravel migrations (users, password_reset_tokens, sessions, cache, jobs) have been removed. This project uses a custom schema with file-based sessions (`SESSION_DRIVER=file`).
+
+To set up the database for the first time:
+
+```bash
+docker compose exec app php artisan migrate
 ```
 
 ## Data Model
@@ -358,6 +361,13 @@ codium docker/php/custom.ini
 ```
 
 This convention ensures the developer can copy-paste commands directly without needing to figure out where a file lives.
+
+All Laravel artisan commands should be run via Docker Compose. The `app` container's working directory is already set to the Laravel project root, so artisan can be called directly:
+
+```bash
+docker compose exec app php artisan make:migration create_example_table
+docker compose exec app php artisan migrate
+```
 
 ### Schema design conventions
 
