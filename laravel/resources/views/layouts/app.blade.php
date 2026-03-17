@@ -15,6 +15,7 @@
             <a href="{{ url('/') }}" class="text-lg font-bold tracking-tight">eztaxes</a>
             <div class="flex items-center gap-6 text-sm">
                 <a href="{{ url('/') }}" class="hover:text-white transition-colors {{ request()->is('/') ? 'text-white' : 'text-stone-400' }}">Dashboard</a>
+                <a href="{{ url('/crypto') }}" class="hover:text-white transition-colors {{ request()->is('crypto*') ? 'text-white' : 'text-stone-400' }}">Crypto</a>
                 <a href="{{ url('/buckets') }}" class="hover:text-white transition-colors {{ request()->is('buckets*') ? 'text-white' : 'text-stone-400' }}">Buckets</a>
                 <a href="{{ url('/csv-templates') }}" class="hover:text-white transition-colors {{ request()->is('csv-templates*') ? 'text-white' : 'text-stone-400' }}">CSV Templates</a>
             </div>

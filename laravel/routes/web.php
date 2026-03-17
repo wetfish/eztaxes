@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BucketController;
+use App\Http\Controllers\CryptoController;
 use App\Http\Controllers\CsvTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
@@ -38,3 +39,14 @@ Route::delete('/patterns/{id}', [BucketController::class, 'deletePattern']);
 // CSV Templates
 Route::get('/csv-templates', [CsvTemplateController::class, 'index']);
 Route::delete('/csv-templates/{id}', [CsvTemplateController::class, 'destroy']);
+
+// Crypto
+Route::get('/crypto', [CryptoController::class, 'index']);
+Route::post('/crypto', [CryptoController::class, 'store']);
+Route::get('/crypto/{id}', [CryptoController::class, 'show']);
+Route::delete('/crypto/{id}', [CryptoController::class, 'destroy']);
+Route::post('/crypto/{id}/buys', [CryptoController::class, 'storeBuy']);
+Route::delete('/crypto/buys/{id}', [CryptoController::class, 'deleteBuy']);
+Route::get('/crypto/{id}/sell', [CryptoController::class, 'createSell']);
+Route::post('/crypto/{id}/sells', [CryptoController::class, 'storeSell']);
+Route::delete('/crypto/sells/{id}', [CryptoController::class, 'deleteSell']);
