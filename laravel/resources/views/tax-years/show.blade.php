@@ -49,9 +49,16 @@
                         <th class="px-4 py-3 font-medium text-right">Transactions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-stone-100">
+                <tbody>
                     @foreach($buckets as $bucket)
-                        <tr class="{{ $bucket->behavior !== 'normal' ? 'text-stone-400' : '' }}">
+                        @php
+                            $bucketIncome = $bucket->transactions->where('amount', '>', 0)->sum('amount');
+                            $bucketExpenses = $bucket->transactions->where('amount', '<', 0)->sum('amount');
+                            $bucketCount = $bucket->transactions->count();
+                            $bucketId = 'bucket-' . $bucket->id;
+                        @endphp
+                        <tr class="border-t border-stone-100 cursor-pointer hover:bg-stone-50 {{ $bucket->behavior !== 'normal' ? 'text-stone-400' : '' }}"
+                            onclick="document.getElementById('{{ $bucketId }}').classList.toggle('hidden')">
                             <td class="px-4 py-3">
                                 {{ $bucket->name }}
                                 @if($bucket->behavior !== 'normal')
@@ -59,13 +66,30 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right text-emerald-600">
-                                ${{ number_format($bucket->transactions->where('amount', '>', 0)->sum('amount'), 2) }}
+                                ${{ number_format($bucketIncome, 2) }}
                             </td>
                             <td class="px-4 py-3 text-right text-red-600">
-                                ${{ number_format(abs($bucket->transactions->where('amount', '<', 0)->sum('amount')), 2) }}
+                                ${{ number_format(abs($bucketExpenses), 2) }}
                             </td>
                             <td class="px-4 py-3 text-right">
-                                {{ $bucket->transactions->count() }}
+                                {{ $bucketCount }}
+                            </td>
+                        </tr>
+                        <tr id="{{ $bucketId }}" class="hidden">
+                            <td colspan="4" class="px-0 py-0">
+                                <table class="w-full text-sm">
+                                    <tbody>
+                                        @foreach($bucket->transactions->sortBy('date') as $transaction)
+                                            <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
+                                                <td class="px-6 py-1.5 text-stone-500 whitespace-nowrap w-28">{{ $transaction->date->format('m/d/Y') }}</td>
+                                                <td class="px-4 py-1.5 text-stone-700">{{ $transaction->description }}</td>
+                                                <td class="px-4 py-1.5 text-right whitespace-nowrap w-28 {{ $transaction->amount > 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                                                    ${{ number_format(abs($transaction->amount), 2) }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </td>
                         </tr>
                     @endforeach
