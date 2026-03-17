@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\DB;
 class CsvImporter
 {
     private TransactionMatcher $matcher;
+    private TaxYearCalculator $calculator;
 
-    public function __construct(TransactionMatcher $matcher)
+    public function __construct(TransactionMatcher $matcher, TaxYearCalculator $calculator)
     {
         $this->matcher = $matcher;
+        $this->calculator = $calculator;
     }
 
     /**
@@ -174,6 +176,9 @@ class CsvImporter
             $import->delete();
             throw $e;
         }
+
+        // Recalculate cached totals on the tax year
+        $this->calculator->recalculate($taxYear);
 
         return $import;
     }
