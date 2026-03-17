@@ -67,11 +67,53 @@ class CryptoController extends Controller
 
         $unallocatedSells = $sells->filter(fn($s) => $s->buys->isEmpty());
 
+        // Tax year summaries for IRS form fields
+        $allocatedSells = $sells->filter(fn($s) => $s->buys->isNotEmpty());
+        $taxYearSummaries = $allocatedSells->groupBy(function ($sell) {
+            return $sell->date->format('Y');
+        })->map(function ($yearSells, $year) {
+            $totalProceeds = $yearSells->sum('total_proceeds');
+            $totalCostBasis = $yearSells->sum('total_cost_basis');
+            $totalGainLoss = $yearSells->sum('gain_loss');
+
+            // Split by long-term vs short-term
+            $longTermProceeds = 0;
+            $longTermCostBasis = 0;
+            $shortTermProceeds = 0;
+            $shortTermCostBasis = 0;
+
+            foreach ($yearSells as $sell) {
+                foreach ($sell->buys as $buy) {
+                    if ($buy->pivot->is_long_term) {
+                        $longTermProceeds += ($buy->pivot->quantity / $sell->quantity) * $sell->total_proceeds;
+                        $longTermCostBasis += $buy->pivot->cost_basis;
+                    } else {
+                        $shortTermProceeds += ($buy->pivot->quantity / $sell->quantity) * $sell->total_proceeds;
+                        $shortTermCostBasis += $buy->pivot->cost_basis;
+                    }
+                }
+            }
+
+            return [
+                'year' => $year,
+                'sell_count' => $yearSells->count(),
+                'total_proceeds' => $totalProceeds,
+                'total_cost_basis' => $totalCostBasis,
+                'total_gain_loss' => $totalGainLoss,
+                'long_term_proceeds' => round($longTermProceeds, 2),
+                'long_term_cost_basis' => round($longTermCostBasis, 2),
+                'long_term_gain_loss' => round($longTermProceeds - $longTermCostBasis, 2),
+                'short_term_proceeds' => round($shortTermProceeds, 2),
+                'short_term_cost_basis' => round($shortTermCostBasis, 2),
+                'short_term_gain_loss' => round($shortTermProceeds - $shortTermCostBasis, 2),
+            ];
+        })->sortKeysDesc();
+
         return view('crypto.show', compact(
             'asset', 'buys', 'sells',
             'totalHoldings', 'totalCostBasis',
             'totalProceeds', 'totalGainLoss',
-            'unallocatedSells'
+            'unallocatedSells', 'taxYearSummaries'
         ));
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BalanceSheetController;
 use App\Http\Controllers\BucketController;
 use App\Http\Controllers\CryptoController;
 use App\Http\Controllers\CsvTemplateController;
@@ -26,6 +27,14 @@ Route::get('/tax-years/{year}/import', [ImportController::class, 'create']);
 Route::post('/tax-years/{year}/import', [ImportController::class, 'upload']);
 Route::post('/tax-years/{year}/import/process', [ImportController::class, 'process']);
 Route::delete('/imports/{id}', [ImportController::class, 'destroy']);
+
+// Balance Sheet
+Route::get('/tax-years/{year}/balance-sheet', [BalanceSheetController::class, 'index']);
+Route::post('/tax-years/{year}/balance-sheet', [BalanceSheetController::class, 'store']);
+Route::get('/tax-years/{year}/balance-sheet/copy', [BalanceSheetController::class, 'copyPreview']);
+Route::post('/tax-years/{year}/balance-sheet/copy', [BalanceSheetController::class, 'copyProcess']);
+Route::patch('/balance-sheet/{id}', [BalanceSheetController::class, 'update']);
+Route::delete('/balance-sheet/{id}', [BalanceSheetController::class, 'destroy']);
 
 // Buckets
 Route::get('/buckets', [BucketController::class, 'index']);

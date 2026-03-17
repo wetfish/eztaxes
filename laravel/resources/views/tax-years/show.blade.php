@@ -12,9 +12,14 @@
                 {{ $taxYear->filing_status === 'amended' ? 'bg-blue-100 text-blue-700' : '' }}
             ">{{ ucfirst($taxYear->filing_status) }}</span>
         </div>
-        <a href="{{ url('/tax-years/' . $taxYear->year . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
-            Import CSV
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet') }}" class="bg-white border border-stone-300 text-stone-700 px-4 py-2 rounded text-sm hover:bg-stone-50 transition-colors">
+                Balance Sheet
+            </a>
+            <a href="{{ url('/tax-years/' . $taxYear->year . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+                Import CSV
+            </a>
+        </div>
     </div>
 
     {{-- Summary --}}

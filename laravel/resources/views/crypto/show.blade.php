@@ -35,6 +35,88 @@
         </div>
     </div>
 
+    {{-- Tax Year Summaries (IRS Form References) --}}
+    @if($taxYearSummaries->isNotEmpty())
+        <h2 class="text-lg font-bold mb-4">Tax Reporting by Year</h2>
+        <div class="grid gap-4 mb-8">
+            @foreach($taxYearSummaries as $summary)
+                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
+                    <div class="bg-stone-100 px-4 py-3 flex items-center justify-between">
+                        <h3 class="font-bold">{{ $summary['year'] }}</h3>
+                        <span class="text-xs text-stone-500">{{ $summary['sell_count'] }} sell{{ $summary['sell_count'] !== 1 ? 's' : '' }}</span>
+                    </div>
+                    <div class="p-4">
+                        {{-- Short-term --}}
+                        @if($summary['short_term_proceeds'] > 0)
+                            <div class="mb-4">
+                                <div class="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Short-Term (held ≤ 1 year)</div>
+                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <div class="text-xs text-stone-400">Total Proceeds <span class="text-stone-300">(1099-DA Box 1f)</span></div>
+                                        <div class="font-medium">${{ number_format($summary['short_term_proceeds'], 2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-stone-400">Total Cost Basis <span class="text-stone-300">(1099-DA Box 1g)</span></div>
+                                        <div class="font-medium">${{ number_format($summary['short_term_cost_basis'], 2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-stone-400">Gain/Loss</div>
+                                        <div class="font-medium {{ $summary['short_term_gain_loss'] >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                                            ${{ number_format($summary['short_term_gain_loss'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Long-term --}}
+                        @if($summary['long_term_proceeds'] > 0)
+                            <div class="mb-4">
+                                <div class="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Long-Term (held > 1 year)</div>
+                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <div class="text-xs text-stone-400">Total Proceeds <span class="text-stone-300">(1099-DA Box 1f)</span></div>
+                                        <div class="font-medium">${{ number_format($summary['long_term_proceeds'], 2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-stone-400">Total Cost Basis <span class="text-stone-300">(1099-DA Box 1g)</span></div>
+                                        <div class="font-medium">${{ number_format($summary['long_term_cost_basis'], 2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-stone-400">Gain/Loss</div>
+                                        <div class="font-medium {{ $summary['long_term_gain_loss'] >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                                            ${{ number_format($summary['long_term_gain_loss'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Combined total --}}
+                        <div class="border-t border-stone-100 pt-3">
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <div class="text-xs text-stone-400">Combined Proceeds</div>
+                                    <div class="font-bold">${{ number_format($summary['total_proceeds'], 2) }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-stone-400">Combined Cost Basis</div>
+                                    <div class="font-bold">${{ number_format($summary['total_cost_basis'], 2) }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-stone-400">Net Gain/Loss</div>
+                                    <div class="font-bold {{ $summary['total_gain_loss'] >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                                        ${{ number_format($summary['total_gain_loss'], 2) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Sells Table --}}
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold">Sells</h2>
