@@ -43,10 +43,14 @@ Route::delete('/csv-templates/{id}', [CsvTemplateController::class, 'destroy']);
 // Crypto
 Route::get('/crypto', [CryptoController::class, 'index']);
 Route::post('/crypto', [CryptoController::class, 'store']);
+Route::delete('/crypto/buys/{id}', [CryptoController::class, 'deleteBuy']);
+Route::delete('/crypto/sells/{id}', [CryptoController::class, 'deleteSell']);
+Route::get('/crypto/sells/{id}/allocate', [CryptoController::class, 'allocateSell']);
+Route::post('/crypto/sells/{id}/allocate', [CryptoController::class, 'storeAllocation']);
 Route::get('/crypto/{id}', [CryptoController::class, 'show']);
 Route::delete('/crypto/{id}', [CryptoController::class, 'destroy']);
 Route::post('/crypto/{id}/buys', [CryptoController::class, 'storeBuy']);
-Route::delete('/crypto/buys/{id}', [CryptoController::class, 'deleteBuy']);
 Route::get('/crypto/{id}/sell', [CryptoController::class, 'createSell']);
 Route::post('/crypto/{id}/sells', [CryptoController::class, 'storeSell']);
-Route::delete('/crypto/sells/{id}', [CryptoController::class, 'deleteSell']);
+Route::get('/crypto/{id}/import', [CryptoController::class, 'importForm']);
+Route::post('/crypto/{id}/import', [CryptoController::class, 'importProcess']);

@@ -14,6 +14,7 @@ class CryptoBuy extends Model
         'quantity',
         'cost_per_unit',
         'total_cost',
+        'fee',
         'quantity_remaining',
         'notes',
     ];
@@ -25,6 +26,7 @@ class CryptoBuy extends Model
             'quantity' => 'decimal:8',
             'cost_per_unit' => 'decimal:2',
             'total_cost' => 'decimal:2',
+            'fee' => 'decimal:2',
             'quantity_remaining' => 'decimal:8',
         ];
     }

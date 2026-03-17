@@ -1,14 +1,37 @@
 @extends('layouts.app')
 
-@section('title', 'Sell ' . $asset->symbol . ' - Crypto - eztaxes')
+@section('title', 'Allocate Sell - ' . $asset->symbol . ' - eztaxes')
 
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/crypto/' . $asset->id) }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to {{ $asset->name }}</a>
-        <h1 class="text-2xl font-bold mt-2">Record Sell — {{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
+        <h1 class="text-2xl font-bold mt-2">Allocate Sell — {{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
     </div>
 
-    <form action="{{ url('/crypto/' . $asset->id . '/sells') }}" method="POST">
+    {{-- Sell Details --}}
+    <div class="bg-white border border-stone-200 rounded-lg p-5 mb-6">
+        <h2 class="font-medium mb-3">Sell Transaction</h2>
+        <div class="grid grid-cols-4 gap-4 text-sm">
+            <div>
+                <div class="text-xs text-stone-500">Date</div>
+                <div class="font-medium">{{ $sell->date->format('m/d/Y') }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-stone-500">Quantity</div>
+                <div class="font-medium font-mono">{{ rtrim(rtrim(number_format($sell->quantity, 8), '0'), '.') }} {{ $asset->symbol }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-stone-500">Price/Unit</div>
+                <div class="font-medium">${{ number_format($sell->price_per_unit, 2) }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-stone-500">Total Proceeds (after fees)</div>
+                <div class="font-medium">${{ number_format($sell->total_proceeds, 2) }}{{ $sell->fee > 0 ? ' (fee: $' . number_format($sell->fee, 2) . ')' : '' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <form action="{{ url('/crypto/sells/' . $sell->id . '/allocate') }}" method="POST">
         @csrf
 
         @if($errors->any())
@@ -19,42 +42,17 @@
             </div>
         @endif
 
-        {{-- Sell Details --}}
-        <div class="bg-white border border-stone-200 rounded-lg p-5 mb-6">
-            <h2 class="font-medium mb-3">Sell Details</h2>
-            <div class="flex items-end gap-4 flex-wrap">
-                <div>
-                    <label class="block text-xs font-medium text-stone-500 mb-1">Date</label>
-                    <input type="date" name="date" required value="{{ old('date') }}" class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-stone-500 mb-1">Quantity to sell</label>
-                    <input type="text" name="quantity" required placeholder="0.00000000" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-stone-500 mb-1">Price per unit ($)</label>
-                    <input type="text" name="price_per_unit" required placeholder="0.00" value="{{ old('price_per_unit') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-stone-500 mb-1">Fee ($)</label>
-                    <input type="text" name="fee" placeholder="0.00" value="{{ old('fee') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-stone-400">
-                </div>
-                <div class="flex-1">
-                    <label class="block text-xs font-medium text-stone-500 mb-1">Notes (optional)</label>
-                    <input type="text" name="notes" placeholder="e.g. Sold on Coinbase" value="{{ old('notes') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
-                </div>
-            </div>
-        </div>
-
         {{-- Buy Allocations --}}
         <div class="bg-white border border-stone-200 rounded-lg p-5 mb-6">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="font-medium">Allocate from Buys</h2>
                 <div class="text-sm text-stone-500">
-                    Total allocated: <span id="total-allocated" class="font-mono font-medium text-stone-800">0</span>
+                    Need: <span class="font-mono font-medium text-stone-800">{{ rtrim(rtrim(number_format($sell->quantity, 8), '0'), '.') }}</span>
+                    &mdash;
+                    Allocated: <span id="total-allocated" class="font-mono font-medium text-stone-800">0</span>
                 </div>
             </div>
-            <p class="text-xs text-stone-400 mb-4">Enter how much to draw from each buy. The total must equal the sell quantity above.</p>
+            <p class="text-xs text-stone-400 mb-4">Enter how much to draw from each buy. The total must equal the sell quantity.</p>
 
             @if($availableBuys->isEmpty())
                 <div class="text-stone-400 text-sm">No buys with remaining quantity available.</div>
@@ -103,14 +101,14 @@
 
         <div class="flex items-center gap-3">
             <button type="submit" class="bg-stone-800 text-white px-6 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
-                Record Sell
+                Save Allocation
             </button>
             <a href="{{ url('/crypto/' . $asset->id) }}" class="text-sm text-stone-500 hover:text-stone-700">Cancel</a>
         </div>
     </form>
 
     <script>
-        var sellQuantityInput = document.querySelector('input[name="quantity"]');
+        var sellQuantity = {{ $sell->quantity }};
 
         document.querySelectorAll('.allocation-input').forEach(function(input) {
             input.addEventListener('input', function() {
@@ -118,11 +116,6 @@
                 updateTotal();
             });
         });
-
-        function getSellQuantity() {
-            var val = parseFloat(sellQuantityInput.value);
-            return isNaN(val) ? 0 : val;
-        }
 
         function getOtherTotal(excludeInput) {
             var total = 0;
@@ -141,7 +134,7 @@
 
             var maxFromBuy = parseFloat(input.dataset.max);
             var otherTotal = getOtherTotal(input);
-            var stillNeeded = Math.max(0, getSellQuantity() - otherTotal);
+            var stillNeeded = Math.max(0, sellQuantity - otherTotal);
             var limit = Math.min(maxFromBuy, stillNeeded);
 
             if (val > limit) input.value = parseFloat(limit.toFixed(8));
@@ -151,7 +144,7 @@
             var input = button.parentElement.querySelector('.allocation-input');
             var maxFromBuy = parseFloat(input.dataset.max);
             var otherTotal = getOtherTotal(input);
-            var stillNeeded = Math.max(0, getSellQuantity() - otherTotal);
+            var stillNeeded = Math.max(0, sellQuantity - otherTotal);
             input.value = Math.min(maxFromBuy, stillNeeded).toFixed(8).replace(/\.?0+$/, '');
             updateTotal();
         }

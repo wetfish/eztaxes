@@ -5,7 +5,12 @@
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/crypto') }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to Crypto</a>
-        <h1 class="text-2xl font-bold mt-2">{{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
+        <div class="flex items-center justify-between mt-2">
+            <h1 class="text-2xl font-bold">{{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
+            <a href="{{ url('/crypto/' . $asset->id . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+                Import CSV
+            </a>
+        </div>
     </div>
 
     {{-- Summary --}}
@@ -30,6 +35,14 @@
         </div>
     </div>
 
+    {{-- Unallocated Sells Warning --}}
+    @if($unallocatedSells->isNotEmpty())
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+            <div class="font-medium text-amber-800">{{ $unallocatedSells->count() }} sell{{ $unallocatedSells->count() > 1 ? 's' : '' }} need buy allocation</div>
+            <p class="text-sm text-amber-600 mt-1">Scroll down to the sells table and click "Allocate" to assign buys.</p>
+        </div>
+    @endif
+
     {{-- Add Buy --}}
     <div class="bg-white border border-stone-200 rounded-lg p-5 mb-8">
         <h2 class="font-medium mb-3">Record Buy</h2>
@@ -53,6 +66,10 @@
             <div>
                 <label class="block text-xs font-medium text-stone-500 mb-1">Cost per unit ($)</label>
                 <input type="text" name="cost_per_unit" required placeholder="0.00" value="{{ old('cost_per_unit') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-stone-500 mb-1">Fee ($)</label>
+                <input type="text" name="fee" placeholder="0.00" value="{{ old('fee') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
             <div class="flex-1">
                 <label class="block text-xs font-medium text-stone-500 mb-1">Notes (optional)</label>
@@ -85,6 +102,7 @@
                         <th class="px-4 py-3 font-medium text-right">Quantity</th>
                         <th class="px-4 py-3 font-medium text-right">Remaining</th>
                         <th class="px-4 py-3 font-medium text-right">Cost/Unit</th>
+                        <th class="px-4 py-3 font-medium text-right">Fee</th>
                         <th class="px-4 py-3 font-medium text-right">Total Cost</th>
                         <th class="px-4 py-3 font-medium">Notes</th>
                         <th class="px-4 py-3 font-medium text-right"></th>
@@ -97,6 +115,7 @@
                             <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity, 8), '0'), '.') }}</td>
                             <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity_remaining, 8), '0'), '.') }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($buy->cost_per_unit, 2) }}</td>
+                            <td class="px-4 py-3 text-right">{{ $buy->fee > 0 ? '$' . number_format($buy->fee, 2) : '' }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($buy->total_cost, 2) }}</td>
                             <td class="px-4 py-3 text-stone-500">{{ $buy->notes ?? '' }}</td>
                             <td class="px-4 py-3 text-right">
@@ -128,31 +147,38 @@
                         <th class="px-4 py-3 font-medium">Date</th>
                         <th class="px-4 py-3 font-medium text-right">Quantity</th>
                         <th class="px-4 py-3 font-medium text-right">Price/Unit</th>
+                        <th class="px-4 py-3 font-medium text-right">Fee</th>
                         <th class="px-4 py-3 font-medium text-right">Proceeds</th>
                         <th class="px-4 py-3 font-medium text-right">Cost Basis</th>
                         <th class="px-4 py-3 font-medium text-right">Gain/Loss</th>
-                        <th class="px-4 py-3 font-medium">Term</th>
+                        <th class="px-4 py-3 font-medium">Status</th>
                         <th class="px-4 py-3 font-medium text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($sells as $sell)
                         @php
+                            $isAllocated = $sell->buys->isNotEmpty();
                             $hasLongTerm = $sell->buys->contains(fn($b) => $b->pivot->is_long_term);
                             $hasShortTerm = $sell->buys->contains(fn($b) => !$b->pivot->is_long_term);
                         @endphp
-                        <tr class="border-t border-stone-100 cursor-pointer hover:bg-stone-50"
-                            onclick="document.getElementById('sell-{{ $sell->id }}').classList.toggle('hidden')">
+                        <tr class="border-t border-stone-100 {{ $isAllocated ? 'cursor-pointer hover:bg-stone-50' : '' }}"
+                            @if($isAllocated) onclick="document.getElementById('sell-{{ $sell->id }}').classList.toggle('hidden')" @endif>
                             <td class="px-4 py-3 whitespace-nowrap">{{ $sell->date->format('m/d/Y') }}</td>
                             <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($sell->quantity, 8), '0'), '.') }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($sell->price_per_unit, 2) }}</td>
+                            <td class="px-4 py-3 text-right">{{ $sell->fee > 0 ? '$' . number_format($sell->fee, 2) : '' }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($sell->total_proceeds, 2) }}</td>
-                            <td class="px-4 py-3 text-right">${{ number_format($sell->total_cost_basis, 2) }}</td>
-                            <td class="px-4 py-3 text-right {{ $sell->gain_loss >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
-                                ${{ number_format($sell->gain_loss, 2) }}
+                            <td class="px-4 py-3 text-right">{{ $isAllocated ? '$' . number_format($sell->total_cost_basis, 2) : '—' }}</td>
+                            <td class="px-4 py-3 text-right {{ $isAllocated ? ($sell->gain_loss >= 0 ? 'text-emerald-600' : 'text-red-600') : '' }}">
+                                {{ $isAllocated ? '$' . number_format($sell->gain_loss, 2) : '—' }}
                             </td>
                             <td class="px-4 py-3">
-                                @if($hasLongTerm && $hasShortTerm)
+                                @if(!$isAllocated)
+                                    <a href="{{ url('/crypto/sells/' . $sell->id . '/allocate') }}" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded hover:bg-amber-200" onclick="event.stopPropagation()">
+                                        Allocate
+                                    </a>
+                                @elseif($hasLongTerm && $hasShortTerm)
                                     <span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded">Mixed</span>
                                 @elseif($hasLongTerm)
                                     <span class="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">Long</span>
@@ -168,29 +194,31 @@
                                 </form>
                             </td>
                         </tr>
-                        <tr id="sell-{{ $sell->id }}" class="hidden">
-                            <td colspan="8" class="px-0 py-0">
-                                <table class="w-full text-sm">
-                                    <tbody>
-                                        @foreach($sell->buys as $index => $buy)
-                                            <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
-                                                <td class="px-6 py-1.5 text-stone-500">Buy: {{ $buy->date->format('m/d/Y') }}</td>
-                                                <td class="px-4 py-1.5 text-right font-mono">{{ rtrim(rtrim(number_format($buy->pivot->quantity, 8), '0'), '.') }}</td>
-                                                <td class="px-4 py-1.5 text-right">${{ number_format($buy->cost_per_unit, 2) }}/unit</td>
-                                                <td class="px-4 py-1.5 text-right">Basis: ${{ number_format($buy->pivot->cost_basis, 2) }}</td>
-                                                <td class="px-4 py-1.5">
-                                                    @if($buy->pivot->is_long_term)
-                                                        <span class="text-xs text-emerald-600">Long-term</span>
-                                                    @else
-                                                        <span class="text-xs text-stone-500">Short-term</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
+                        @if($isAllocated)
+                            <tr id="sell-{{ $sell->id }}" class="hidden">
+                                <td colspan="9" class="px-0 py-0">
+                                    <table class="w-full text-sm">
+                                        <tbody>
+                                            @foreach($sell->buys as $buy)
+                                                <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
+                                                    <td class="px-6 py-1.5 text-stone-500">Buy: {{ $buy->date->format('m/d/Y') }}</td>
+                                                    <td class="px-4 py-1.5 text-right font-mono">{{ rtrim(rtrim(number_format($buy->pivot->quantity, 8), '0'), '.') }}</td>
+                                                    <td class="px-4 py-1.5 text-right">${{ number_format($buy->cost_per_unit, 2) }}/unit</td>
+                                                    <td class="px-4 py-1.5 text-right">Basis: ${{ number_format($buy->pivot->cost_basis, 2) }}</td>
+                                                    <td class="px-4 py-1.5">
+                                                        @if($buy->pivot->is_long_term)
+                                                            <span class="text-xs text-emerald-600">Long-term</span>
+                                                        @else
+                                                            <span class="text-xs text-stone-500">Short-term</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        @endif
                     @endforeach
                 </tbody>
             </table>

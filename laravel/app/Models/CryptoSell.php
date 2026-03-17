@@ -14,6 +14,7 @@ class CryptoSell extends Model
         'quantity',
         'price_per_unit',
         'total_proceeds',
+        'fee',
         'total_cost_basis',
         'gain_loss',
         'notes',
@@ -26,6 +27,7 @@ class CryptoSell extends Model
             'quantity' => 'decimal:8',
             'price_per_unit' => 'decimal:2',
             'total_proceeds' => 'decimal:2',
+            'fee' => 'decimal:2',
             'total_cost_basis' => 'decimal:2',
             'gain_loss' => 'decimal:2',
         ];
