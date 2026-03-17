@@ -51,7 +51,11 @@ class CryptoController extends Controller
         $sells = CryptoSell::where('crypto_asset_id', $asset->id)
             ->with('buys')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->sortBy(function ($sell) {
+                // Unallocated sells first, then by date
+                return ($sell->buys->isEmpty() ? '0' : '1') . $sell->date->format('Y-m-d');
+            });
 
         $totalHoldings = $buys->sum('quantity_remaining');
         $totalCostBasis = $buys->sum(function ($buy) {

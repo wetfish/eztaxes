@@ -60,43 +60,45 @@
                 <div class="text-stone-400 text-sm">No buys with remaining quantity available.</div>
             @else
                 <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-stone-100 text-left">
-                            <tr>
-                                <th class="px-4 py-3 font-medium">Buy Date</th>
-                                <th class="px-4 py-3 font-medium text-right">Cost/Unit</th>
-                                <th class="px-4 py-3 font-medium text-right">Original Qty</th>
-                                <th class="px-4 py-3 font-medium text-right">Remaining</th>
-                                <th class="px-4 py-3 font-medium">Notes</th>
-                                <th class="px-4 py-3 font-medium text-right">Allocate</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-stone-100">
-                            @foreach($availableBuys as $index => $buy)
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-stone-100 text-left sticky top-0 z-10">
                                 <tr>
-                                    <td class="px-4 py-3 whitespace-nowrap">{{ $buy->date->format('m/d/Y') }}</td>
-                                    <td class="px-4 py-3 text-right">${{ number_format($buy->cost_per_unit, 2) }}</td>
-                                    <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity, 8), '0'), '.') }}</td>
-                                    <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity_remaining, 8), '0'), '.') }}</td>
-                                    <td class="px-4 py-3 text-stone-500">{{ $buy->notes ?? '' }}</td>
-                                    <td class="px-4 py-3 text-right">
-                                        <input type="hidden" name="buy_allocations[{{ $index }}][buy_id]" value="{{ $buy->id }}">
-                                        <div class="flex items-center justify-end gap-1">
-                                            <input
-                                                type="text"
-                                                name="buy_allocations[{{ $index }}][quantity]"
-                                                value="{{ old("buy_allocations.{$index}.quantity", '0') }}"
-                                                placeholder="0"
-                                                data-max="{{ $buy->quantity_remaining }}"
-                                                class="allocation-input border border-stone-300 rounded px-2 py-1 text-sm w-36 text-right focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono"
-                                            >
-                                            <button type="button" onclick="fillMax(this)" class="text-xs bg-stone-100 hover:bg-stone-200 text-stone-600 px-2 py-1 rounded whitespace-nowrap">Max</button>
-                                        </div>
-                                    </td>
+                                    <th class="px-4 py-3 font-medium">Buy Date</th>
+                                    <th class="px-4 py-3 font-medium text-right">Cost/Unit</th>
+                                    <th class="px-4 py-3 font-medium text-right">Original Qty</th>
+                                    <th class="px-4 py-3 font-medium text-right">Remaining</th>
+                                    <th class="px-4 py-3 font-medium">Notes</th>
+                                    <th class="px-4 py-3 font-medium text-right">Allocate</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y divide-stone-100">
+                                @foreach($availableBuys as $index => $buy)
+                                    <tr>
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ $buy->date->format('m/d/Y') }}</td>
+                                        <td class="px-4 py-3 text-right">${{ number_format($buy->cost_per_unit, 2) }}</td>
+                                        <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity, 8), '0'), '.') }}</td>
+                                        <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($buy->quantity_remaining, 8), '0'), '.') }}</td>
+                                        <td class="px-4 py-3 text-stone-500">{{ $buy->notes ?? '' }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <input type="hidden" name="buy_allocations[{{ $index }}][buy_id]" value="{{ $buy->id }}">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <input
+                                                    type="text"
+                                                    name="buy_allocations[{{ $index }}][quantity]"
+                                                    value="{{ old("buy_allocations.{$index}.quantity", '0') }}"
+                                                    placeholder="0"
+                                                    data-max="{{ $buy->quantity_remaining }}"
+                                                    class="allocation-input border border-stone-300 rounded px-2 py-1 text-sm w-36 text-right focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono"
+                                                >
+                                                <button type="button" onclick="fillMax(this)" class="text-xs bg-stone-100 hover:bg-stone-200 text-stone-600 px-2 py-1 rounded whitespace-nowrap">Max</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
         </div>
