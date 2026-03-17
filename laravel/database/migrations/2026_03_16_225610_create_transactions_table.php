@@ -18,7 +18,6 @@ return new class extends Migration
             $table->date('date');
             $table->string('description'); // raw text from bank/statement
             $table->decimal('amount', 10, 2); // signed: positive = income, negative = expense
-            $table->json('raw_data')->nullable(); // full original CSV row for reference
             $table->string('match_type')->default('unmatched'); // expected: auto, manual, unmatched
             $table->timestamps();
         });

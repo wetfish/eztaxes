@@ -14,7 +14,6 @@ class Transaction extends Model
         'date',
         'description',
         'amount',
-        'raw_data',
         'match_type',
     ];
 
@@ -23,7 +22,6 @@ class Transaction extends Model
         return [
             'date' => 'date',
             'amount' => 'decimal:2',
-            'raw_data' => 'array',
         ];
     }
 
