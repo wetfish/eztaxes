@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $asset->name . ' - Crypto - eztaxes')
+@section('title', $asset->name . ' - Crypto - EzTaxes')
 
 @section('content')
     <div class="mb-8">
@@ -13,19 +13,35 @@
         </div>
     </div>
 
+    {{-- Discrepancy Warning --}}
+    @if($hasDiscrepancy)
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div class="font-medium text-amber-800">Holdings discrepancy detected</div>
+            <p class="text-sm text-amber-700 mt-1">
+                The {{ $balanceSheetYear }} balance sheet shows
+                <span class="font-mono font-medium">{{ rtrim(rtrim(number_format($balanceSheetQuantity, 8), '0'), '.') }} {{ $asset->symbol }}</span>
+                but tracked transactions total
+                <span class="font-mono font-medium">{{ rtrim(rtrim(number_format($totalHoldings, 8), '0'), '.') }} {{ $asset->symbol }}</span>.
+                This likely means some buy transactions haven't been imported yet.
+            </p>
+        </div>
+    @endif
+
     {{-- Summary --}}
-    <div class="grid grid-cols-4 gap-4 mb-8">
-        <div class="bg-white border border-stone-200 rounded-lg p-4">
-            <div class="text-sm text-stone-500">Current Holdings</div>
+    <div class="grid {{ $balanceSheetQuantity !== null ? 'grid-cols-4' : 'grid-cols-3' }} gap-4 mb-4">
+        @if($balanceSheetQuantity !== null)
+            <div class="bg-white border border-stone-200 rounded-lg p-4">
+                <div class="text-sm text-stone-500">Balance Sheet Holdings <span class="text-stone-300">({{ $balanceSheetYear }})</span></div>
+                <div class="text-xl font-bold font-mono">{{ rtrim(rtrim(number_format($balanceSheetQuantity, 8), '0'), '.') }} {{ $asset->symbol }}</div>
+            </div>
+        @endif
+        <div class="bg-white border {{ $hasDiscrepancy ? 'border-amber-300' : 'border-stone-200' }} rounded-lg p-4">
+            <div class="text-sm text-stone-500">Tracked Holdings</div>
             <div class="text-xl font-bold font-mono">{{ rtrim(rtrim(number_format($totalHoldings, 8), '0'), '.') }} {{ $asset->symbol }}</div>
         </div>
         <div class="bg-white border border-stone-200 rounded-lg p-4">
             <div class="text-sm text-stone-500">Remaining Cost Basis</div>
             <div class="text-xl font-bold">${{ number_format($totalCostBasis, 2) }}</div>
-        </div>
-        <div class="bg-white border border-stone-200 rounded-lg p-4">
-            <div class="text-sm text-stone-500">Total Proceeds (Sells)</div>
-            <div class="text-xl font-bold">${{ number_format($totalProceeds, 2) }}</div>
         </div>
         <div class="bg-white border border-stone-200 rounded-lg p-4">
             <div class="text-sm text-stone-500">Realized Gain/Loss</div>
@@ -34,6 +50,12 @@
             </div>
         </div>
     </div>
+
+    @if($balanceSheetQuantity === null)
+        <div class="text-xs text-stone-400 mb-8">No balance sheet entry linked to this asset. Add one from a tax year's balance sheet to enable cross-referencing.</div>
+    @else
+        <div class="mb-8"></div>
+    @endif
 
     {{-- Tax Year Summaries (IRS Form References) --}}
     @if($taxYearSummaries->isNotEmpty())

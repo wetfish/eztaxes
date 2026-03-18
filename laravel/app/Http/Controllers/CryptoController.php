@@ -20,6 +20,18 @@ class CryptoController extends Controller
         foreach ($assets as $asset) {
             $asset->total_holdings = CryptoBuy::where('crypto_asset_id', $asset->id)
                 ->sum('quantity_remaining');
+
+            // Find the most recent balance sheet entry for this asset
+            $bsItem = \App\Models\BalanceSheetItem::where('crypto_asset_id', $asset->id)
+                ->join('tax_years', 'tax_years.id', '=', 'balance_sheet_items.tax_year_id')
+                ->orderByDesc('tax_years.year')
+                ->select('balance_sheet_items.*')
+                ->first();
+
+            $asset->balance_sheet_quantity = $bsItem?->quantity;
+            $asset->balance_sheet_year = $bsItem ? \App\Models\TaxYear::find($bsItem->tax_year_id)->year : null;
+            $asset->has_discrepancy = $asset->balance_sheet_quantity !== null
+                && abs((float) $asset->balance_sheet_quantity - (float) $asset->total_holdings) > 0.00000001;
         }
 
         return view('crypto.index', compact('assets'));
@@ -67,6 +79,18 @@ class CryptoController extends Controller
 
         $unallocatedSells = $sells->filter(fn($s) => $s->buys->isEmpty());
 
+        // Balance sheet cross-reference
+        $bsItem = \App\Models\BalanceSheetItem::where('crypto_asset_id', $asset->id)
+            ->join('tax_years', 'tax_years.id', '=', 'balance_sheet_items.tax_year_id')
+            ->orderByDesc('tax_years.year')
+            ->select('balance_sheet_items.*')
+            ->first();
+
+        $balanceSheetQuantity = $bsItem?->quantity;
+        $balanceSheetYear = $bsItem ? $bsItem->taxYear->year : null;
+        $hasDiscrepancy = $balanceSheetQuantity !== null
+            && abs((float) $balanceSheetQuantity - (float) $totalHoldings) > 0.00000001;
+
         // Tax year summaries for IRS form fields
         $allocatedSells = $sells->filter(fn($s) => $s->buys->isNotEmpty());
         $taxYearSummaries = $allocatedSells->groupBy(function ($sell) {
@@ -113,7 +137,8 @@ class CryptoController extends Controller
             'asset', 'buys', 'sells',
             'totalHoldings', 'totalCostBasis',
             'totalProceeds', 'totalGainLoss',
-            'unallocatedSells', 'taxYearSummaries'
+            'unallocatedSells', 'taxYearSummaries',
+            'balanceSheetQuantity', 'balanceSheetYear', 'hasDiscrepancy'
         ));
     }
 

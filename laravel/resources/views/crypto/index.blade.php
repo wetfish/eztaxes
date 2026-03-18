@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Crypto - eztaxes')
+@section('title', 'Crypto - EzTaxes')
 
 @section('content')
     <div class="flex items-center justify-between mb-8">
@@ -37,7 +37,8 @@
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">Asset</th>
-                        <th class="px-4 py-3 font-medium text-right">Holdings</th>
+                        <th class="px-4 py-3 font-medium text-right">Balance Sheet Holdings</th>
+                        <th class="px-4 py-3 font-medium text-right">Tracked Holdings</th>
                         <th class="px-4 py-3 font-medium text-right">Buys</th>
                         <th class="px-4 py-3 font-medium text-right">Sells</th>
                         <th class="px-4 py-3 font-medium text-right"></th>
@@ -50,7 +51,20 @@
                                 <a href="{{ url('/crypto/' . $asset->id) }}" class="font-medium hover:underline">{{ $asset->name }}</a>
                                 <span class="text-stone-400 ml-1">{{ $asset->symbol }}</span>
                             </td>
-                            <td class="px-4 py-3 text-right font-mono">{{ rtrim(rtrim(number_format($asset->total_holdings, 8), '0'), '.') }}</td>
+                            <td class="px-4 py-3 text-right font-mono">
+                                @if($asset->balance_sheet_quantity !== null)
+                                    {{ rtrim(rtrim(number_format($asset->balance_sheet_quantity, 8), '0'), '.') }}
+                                    <span class="text-xs text-stone-400 font-sans ml-1">({{ $asset->balance_sheet_year }})</span>
+                                @else
+                                    <span class="text-stone-300">—</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-right font-mono">
+                                {{ rtrim(rtrim(number_format($asset->total_holdings, 8), '0'), '.') }}
+                                @if($asset->has_discrepancy)
+                                    <span class="inline-block ml-1 text-amber-500" title="Tracked holdings don't match balance sheet">⚠</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-right">{{ $asset->buys_count }}</td>
                             <td class="px-4 py-3 text-right">{{ $asset->sells_count }}</td>
                             <td class="px-4 py-3 text-right">
