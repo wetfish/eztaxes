@@ -366,30 +366,74 @@ class CryptoController extends Controller
         $file = $request->file('csv_file');
         $contents = file_get_contents($file->getRealPath());
         $lines = preg_split('/\R/m', $contents);
-        $rows = array_filter(
-            array_map('str_getcsv', $lines),
+
+        // Detect delimiter — check if tabs are more common than commas in the file
+        $tabCount = substr_count($contents, "\t");
+        $commaCount = substr_count($contents, ",");
+        $delimiter = $tabCount > $commaCount ? "\t" : ",";
+
+        $allRows = array_filter(
+            array_map(fn($line) => str_getcsv($line, $delimiter), $lines),
             fn($row) => !empty(array_filter($row, fn($cell) => $cell !== null && $cell !== ''))
         );
 
-        if (count($rows) < 2) {
+        if (count($allRows) < 2) {
             return back()->with('error', 'CSV file is empty or has no data rows.');
         }
 
-        $headers = array_map('trim', $rows[0]);
-        $dataRows = array_slice($rows, 1);
+        // Scan for the header row — look for rows containing known column names
+        $headerRowIndex = null;
+        $format = null;
+        $allRows = array_values($allRows); // re-index
 
-        // Find column indices
+        $coinbaseColumns = ['transaction type', 'date acquired', 'cost basis (usd)', 'proceeds (usd)'];
+        $cashappColumns = ['transaction type', 'asset amount', 'asset price'];
+
+        foreach ($allRows as $index => $row) {
+            $lowered = array_map(fn($cell) => strtolower(trim($cell ?? '')), $row);
+
+            // Check Coinbase first (more specific)
+            $coinbaseMatches = count(array_intersect($coinbaseColumns, $lowered));
+            if ($coinbaseMatches >= 3) {
+                $headerRowIndex = $index;
+                $format = 'coinbase';
+                break;
+            }
+
+            // Check CashApp
+            $cashappMatches = count(array_intersect($cashappColumns, $lowered));
+            if ($cashappMatches >= 2) {
+                $headerRowIndex = $index;
+                $format = 'cashapp';
+                break;
+            }
+        }
+
+        if ($headerRowIndex === null) {
+            return back()->with('error', 'Could not find a recognized header row. Supported formats: CashApp, Coinbase gain/loss report.');
+        }
+
+        $headers = array_map('trim', $allRows[$headerRowIndex]);
         $headerMap = array_flip(array_map('strtolower', $headers));
+        $dataRows = array_slice($allRows, $headerRowIndex + 1);
 
+        if ($format === 'coinbase') {
+            return $this->importCoinbase($asset, $headerMap, $dataRows);
+        }
+
+        return $this->importCashApp($asset, $headerMap, $dataRows);
+    }
+
+    private function importCashApp(CryptoAsset $asset, array $headerMap, array $dataRows)
+    {
         $colDate = $headerMap['date'] ?? null;
         $colType = $headerMap['transaction type'] ?? null;
         $colAmount = $headerMap['asset amount'] ?? null;
         $colPrice = $headerMap['asset price'] ?? null;
         $colFee = $headerMap['fee'] ?? null;
-        $colCurrency = $headerMap['currency'] ?? null;
 
         if ($colDate === null || $colType === null || $colAmount === null || $colPrice === null) {
-            return back()->with('error', 'Could not find required columns: Date, Transaction Type, Asset Amount, Asset Price.');
+            return back()->with('error', 'CashApp format: could not find required columns (Date, Transaction Type, Asset Amount, Asset Price).');
         }
 
         $buysCreated = 0;
@@ -408,7 +452,6 @@ class CryptoController extends Controller
                 continue;
             }
 
-            // Parse the date
             $parsedDate = $this->parseDate($date);
 
             if (!$parsedDate) {
@@ -448,7 +491,7 @@ class CryptoController extends Controller
             }
         }
 
-        $message = "Import complete: {$buysCreated} buys, {$sellsCreated} sells.";
+        $message = "CashApp import complete: {$buysCreated} buys, {$sellsCreated} sells.";
 
         if ($skipped > 0) {
             $message .= " {$skipped} rows skipped.";
@@ -456,6 +499,120 @@ class CryptoController extends Controller
 
         if ($sellsCreated > 0) {
             $message .= " Sells need buy allocation — see unallocated sells below.";
+        }
+
+        return redirect("/crypto/{$asset->id}")->with('success', $message);
+    }
+
+    private function importCoinbase(CryptoAsset $asset, array $headerMap, array $dataRows)
+    {
+        $colType = $headerMap['transaction type'] ?? null;
+        $colAmount = $headerMap['amount'] ?? null;
+        $colDateAcquired = $headerMap['date acquired'] ?? null;
+        $colCostBasis = $headerMap['cost basis (usd)'] ?? null;
+        $colDateDisposition = $headerMap['date of disposition'] ?? null;
+        $colProceeds = $headerMap['proceeds (usd)'] ?? null;
+        $colGainLoss = $headerMap['gains (losses) (usd)'] ?? null;
+        $colHoldingPeriod = $headerMap['holding period (days)'] ?? null;
+
+        if ($colAmount === null || $colDateDisposition === null || $colProceeds === null || $colCostBasis === null) {
+            return back()->with('error', 'Coinbase format: could not find required columns (Amount, Date of Disposition, Proceeds (USD), Cost basis (USD)).');
+        }
+
+        $pairsCreated = 0;
+        $skipped = 0;
+
+        foreach ($dataRows as $row) {
+            $type = strtolower(trim($row[$colType] ?? 'sell'));
+            $amount = abs((float) $this->cleanNumeric($row[$colAmount] ?? '0'));
+            $costBasis = abs((float) $this->cleanNumeric($row[$colCostBasis] ?? '0'));
+            $proceeds = abs((float) $this->cleanNumeric($row[$colProceeds] ?? '0'));
+            $gainLoss = (float) $this->cleanNumeric($row[$colGainLoss] ?? '0');
+            $holdingDays = (int) ($row[$colHoldingPeriod] ?? 0);
+
+            $sellDateStr = trim($row[$colDateDisposition] ?? '');
+            $buyDateStr = $colDateAcquired !== null ? trim($row[$colDateAcquired] ?? '') : '';
+
+            if (empty($sellDateStr) || $amount <= 0) {
+                $skipped++;
+                continue;
+            }
+
+            $parsedSellDate = $this->parseDate($sellDateStr);
+
+            if (!$parsedSellDate) {
+                $skipped++;
+                continue;
+            }
+
+            // Determine buy date: from column, or calculate from holding period
+            $parsedBuyDate = null;
+
+            if (!empty($buyDateStr)) {
+                $parsedBuyDate = $this->parseDate($buyDateStr);
+            }
+
+            if (!$parsedBuyDate && $holdingDays > 0) {
+                $parsedBuyDate = Carbon::parse($parsedSellDate)->subDays($holdingDays)->format('Y-m-d');
+            }
+
+            if (!$parsedBuyDate) {
+                $skipped++;
+                continue;
+            }
+
+            // Skip non-disposition types
+            if (!str_contains($type, 'sell') && !str_contains($type, 'convert') && $type !== '') {
+                // If type is empty, treat as sell (some exports omit it)
+                if ($type !== '') {
+                    $skipped++;
+                    continue;
+                }
+            }
+
+            $isLongTerm = $holdingDays > 365;
+            $costPerUnit = $amount > 0 ? round($costBasis / $amount, 2) : 0;
+            $pricePerUnit = $amount > 0 ? round($proceeds / $amount, 2) : 0;
+
+            // Create the buy (tax lot origin)
+            $buy = CryptoBuy::create([
+                'crypto_asset_id' => $asset->id,
+                'date' => $parsedBuyDate,
+                'quantity' => $amount,
+                'cost_per_unit' => $costPerUnit,
+                'total_cost' => $costBasis,
+                'fee' => 0,
+                'quantity_remaining' => 0, // fully consumed by this sell
+                'notes' => 'Coinbase tax lot import',
+            ]);
+
+            // Create the sell
+            $sell = CryptoSell::create([
+                'crypto_asset_id' => $asset->id,
+                'date' => $parsedSellDate,
+                'quantity' => $amount,
+                'price_per_unit' => $pricePerUnit,
+                'total_proceeds' => $proceeds,
+                'fee' => 0,
+                'total_cost_basis' => $costBasis,
+                'gain_loss' => $gainLoss,
+                'notes' => 'Coinbase gain/loss import',
+            ]);
+
+            // Create the allocation linking them
+            $sell->buys()->attach($buy->id, [
+                'quantity' => $amount,
+                'cost_basis' => $costBasis,
+                'is_long_term' => $isLongTerm,
+            ]);
+
+            $pairsCreated++;
+        }
+
+        $message = "Coinbase import complete: {$pairsCreated} sell transaction" . ($pairsCreated !== 1 ? 's' : '') . " with cost basis fully allocated.";
+
+        if ($skipped > 0) {
+            $message .= " {$skipped} rows skipped.";
         }
 
         return redirect("/crypto/{$asset->id}")->with('success', $message);
