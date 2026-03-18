@@ -7,6 +7,7 @@ use App\Models\CryptoAsset;
 use App\Models\CryptoBuy;
 use App\Models\CryptoSell;
 use App\Models\TaxYear;
+use App\Services\PriceLookupService;
 use Illuminate\Http\Request;
 
 class BalanceSheetController extends Controller
@@ -16,6 +17,7 @@ class BalanceSheetController extends Controller
         $taxYear = TaxYear::where('year', $year)->firstOrFail();
 
         $items = BalanceSheetItem::where('tax_year_id', $taxYear->id)
+            ->with('cryptoAsset')
             ->orderBy('sort_order')
             ->get();
 
@@ -72,6 +74,7 @@ class BalanceSheetController extends Controller
             'label' => 'required|string|max:255',
             'asset_type' => 'required|in:crypto,stock,cash,other',
             'crypto_asset_id' => 'nullable|exists:crypto_assets,id',
+            'ticker_symbol' => 'nullable|string|max:20',
             'quantity' => 'nullable|numeric|min:0',
             'unit_price_year_end' => 'nullable|numeric|min:0',
             'total_value' => 'nullable|numeric|min:0',
@@ -94,6 +97,7 @@ class BalanceSheetController extends Controller
             'crypto_asset_id' => $request->asset_type === 'crypto' ? $request->crypto_asset_id : null,
             'label' => $request->label,
             'asset_type' => $request->asset_type,
+            'ticker_symbol' => $request->asset_type === 'stock' ? strtoupper(trim($request->ticker_symbol ?? '')) ?: null : null,
             'quantity' => $quantity,
             'unit_price_year_end' => $unitPrice,
             'total_value' => $totalValue,
@@ -115,6 +119,7 @@ class BalanceSheetController extends Controller
         ]);
 
         $request->validate([
+            'ticker_symbol' => 'nullable|string|max:20',
             'quantity' => 'nullable|numeric|min:0',
             'unit_price_year_end' => 'nullable|numeric|min:0',
             'total_value' => 'nullable|numeric|min:0',
@@ -129,12 +134,18 @@ class BalanceSheetController extends Controller
             $totalValue = round($quantity * $unitPrice, 2);
         }
 
-        $item->update([
+        $updateData = [
             'quantity' => $quantity,
             'unit_price_year_end' => $unitPrice,
             'total_value' => $totalValue,
             'notes' => $request->notes,
-        ]);
+        ];
+
+        if ($item->asset_type === 'stock' && $request->has('ticker_symbol')) {
+            $updateData['ticker_symbol'] = strtoupper(trim($request->ticker_symbol ?? '')) ?: null;
+        }
+
+        $item->update($updateData);
 
         $year = $item->taxYear->year;
 
@@ -262,6 +273,84 @@ class BalanceSheetController extends Controller
 
         return redirect("/tax-years/{$year}/balance-sheet")
             ->with('success', "Copied {$created} items from " . ($year - 1) . ". Update Dec 31 prices to finalize.");
+    }
+
+    public function fetchPrices(int $year, PriceLookupService $priceLookup)
+    {
+        $taxYear = TaxYear::where('year', $year)->firstOrFail();
+
+        $items = BalanceSheetItem::where('tax_year_id', $taxYear->id)
+            ->whereIn('asset_type', ['crypto', 'stock'])
+            ->with('cryptoAsset')
+            ->get();
+
+        if ($items->isEmpty()) {
+            return redirect("/tax-years/{$year}/balance-sheet")
+                ->with('error', 'No crypto or stock items to fetch prices for.');
+        }
+
+        $date = "{$year}-12-31";
+        $updated = 0;
+        $failed = [];
+
+        // Process crypto items first (CryptoCompare has no rate limit concerns)
+        $cryptoItems = $items->where('asset_type', 'crypto');
+        $stockItems = $items->where('asset_type', 'stock');
+
+        foreach ($cryptoItems as $item) {
+            $identifier = $item->cryptoAsset?->symbol;
+
+            if (empty($identifier)) {
+                $failed[] = $item->label . ' (no linked crypto asset)';
+                continue;
+            }
+
+            $price = $priceLookup->getCryptoPrice($identifier, $date);
+
+            if ($price !== null) {
+                $totalValue = $item->quantity ? round((float) $item->quantity * $price, 2) : $price;
+                $item->update(['unit_price_year_end' => round($price, 2), 'total_value' => $totalValue]);
+                $updated++;
+            } else {
+                $failed[] = $item->label . ' (API returned no data)';
+            }
+        }
+
+        // Process stock items with delay between calls (Alpha Vantage free: 5 calls/min)
+        $stockCallCount = 0;
+
+        foreach ($stockItems as $item) {
+            $identifier = $item->ticker_symbol;
+
+            if (empty($identifier)) {
+                $failed[] = $item->label . ' (no ticker symbol)';
+                continue;
+            }
+
+            if ($stockCallCount > 0) {
+                sleep(15);
+            }
+
+            $price = $priceLookup->getStockPrice($identifier, $date);
+            $stockCallCount++;
+
+            if ($price !== null) {
+                $totalValue = $item->quantity ? round((float) $item->quantity * $price, 2) : $price;
+                $item->update(['unit_price_year_end' => round($price, 2), 'total_value' => $totalValue]);
+                $updated++;
+            } else {
+                $failed[] = $item->label . ' (API returned no data — may be rate limited, try again in a minute)';
+            }
+        }
+
+        $message = "Fetched prices for {$updated} item" . ($updated !== 1 ? 's' : '') . ".";
+
+        if (!empty($failed)) {
+            $message .= " Could not fetch: " . implode(', ', $failed) . ".";
+        }
+
+        return redirect("/tax-years/{$year}/balance-sheet")
+            ->with($updated > 0 ? 'success' : 'error', $message);
     }
 
     private function cleanNumeric(?string $value): ?string

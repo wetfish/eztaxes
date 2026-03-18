@@ -33,6 +33,7 @@ Route::get('/tax-years/{year}/balance-sheet', [BalanceSheetController::class, 'i
 Route::post('/tax-years/{year}/balance-sheet', [BalanceSheetController::class, 'store']);
 Route::get('/tax-years/{year}/balance-sheet/copy', [BalanceSheetController::class, 'copyPreview']);
 Route::post('/tax-years/{year}/balance-sheet/copy', [BalanceSheetController::class, 'copyProcess']);
+Route::post('/tax-years/{year}/balance-sheet/fetch-prices', [BalanceSheetController::class, 'fetchPrices']);
 Route::patch('/balance-sheet/{id}', [BalanceSheetController::class, 'update']);
 Route::delete('/balance-sheet/{id}', [BalanceSheetController::class, 'destroy']);
 

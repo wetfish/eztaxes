@@ -12,6 +12,7 @@ class BalanceSheetItem extends Model
         'crypto_asset_id',
         'label',
         'asset_type',
+        'ticker_symbol',
         'quantity',
         'unit_price_year_end',
         'total_value',

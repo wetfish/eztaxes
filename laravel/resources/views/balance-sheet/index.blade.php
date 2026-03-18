@@ -1,17 +1,27 @@
 @extends('layouts.app')
 
-@section('title', 'Balance Sheet - ' . $taxYear->year . ' - eztaxes')
+@section('title', 'Balance Sheet - ' . $taxYear->year . ' - EzTaxes')
 
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/tax-years/' . $taxYear->year) }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to {{ $taxYear->year }}</a>
         <div class="flex items-center justify-between mt-2">
             <h1 class="text-2xl font-bold">Balance Sheet — December 31, {{ $taxYear->year }}</h1>
-            @if($canCopyFromPrevious)
-                <a href="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet/copy') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
-                    Copy from {{ $taxYear->year - 1 }}
-                </a>
-            @endif
+            <div class="flex items-center gap-3">
+                @if($items->whereIn('asset_type', ['crypto', 'stock'])->isNotEmpty())
+                    <form action="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet/fetch-prices') }}" method="POST" onsubmit="this.querySelector('button').innerHTML='Fetching prices&hellip; <span class=\'text-xs font-normal\'>stocks may take a minute</span>'; this.querySelector('button').disabled=true;">
+                        @csrf
+                        <button type="submit" class="bg-white border border-stone-300 text-stone-700 px-4 py-2 rounded text-sm hover:bg-stone-50 transition-colors">
+                            Fetch Dec 31 Prices
+                        </button>
+                    </form>
+                @endif
+                @if($canCopyFromPrevious)
+                    <a href="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet/copy') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+                        Copy from {{ $taxYear->year - 1 }}
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -56,6 +66,10 @@
                     <label class="block text-xs font-medium text-stone-500 mb-1">Label</label>
                     <input type="text" name="label" required placeholder="e.g. Bitcoin, Business Checking" value="{{ old('label') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>
+                <div id="ticker-symbol-field" class="hidden">
+                    <label class="block text-xs font-medium text-stone-500 mb-1">Ticker</label>
+                    <input type="text" name="ticker_symbol" placeholder="e.g. RBLX" value="{{ old('ticker_symbol') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-stone-400 uppercase">
+                </div>
                 <div id="quantity-field">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Quantity</label>
                     <input type="text" name="quantity" placeholder="0.00" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
@@ -87,6 +101,7 @@
                     <tr>
                         <th class="px-4 py-3 font-medium">Asset</th>
                         <th class="px-4 py-3 font-medium">Type</th>
+                        <th class="px-4 py-3 font-medium">Ticker</th>
                         <th class="px-4 py-3 font-medium text-right">Quantity</th>
                         <th class="px-4 py-3 font-medium text-right">Dec 31 Price</th>
                         <th class="px-4 py-3 font-medium text-right">Total Value</th>
@@ -106,6 +121,15 @@
                                     {{ $item->asset_type === 'cash' ? 'bg-emerald-50 text-emerald-600' : '' }}
                                     {{ $item->asset_type === 'other' ? 'bg-stone-100 text-stone-600' : '' }}
                                 ">{{ ucfirst($item->asset_type) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-xs font-mono text-stone-400">
+                                @if($item->asset_type === 'crypto' && $item->cryptoAsset)
+                                    {{ $item->cryptoAsset->symbol }}
+                                @elseif($item->ticker_symbol)
+                                    {{ $item->ticker_symbol }}
+                                @else
+                                    —
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-right font-mono">
                                 @if($item->quantity)
@@ -135,7 +159,7 @@
                         {{-- Crypto hints --}}
                         @if(isset($cryptoHints[$item->id]))
                             <tr class="bg-purple-50">
-                                <td colspan="7" class="px-6 py-2 text-xs text-purple-600">
+                                <td colspan="8" class="px-6 py-2 text-xs text-purple-600">
                                     Tracked in crypto module:
                                     Current holdings: {{ rtrim(rtrim(number_format($cryptoHints[$item->id]['current_holdings'], 8), '0'), '.') }}
                                     @if($cryptoHints[$item->id]['bought'] > 0)
@@ -150,10 +174,16 @@
 
                         {{-- Inline edit row --}}
                         <tr id="edit-{{ $item->id }}" class="hidden bg-stone-50">
-                            <td colspan="7" class="px-4 py-3">
+                            <td colspan="8" class="px-4 py-3">
                                 <form action="{{ url('/balance-sheet/' . $item->id) }}" method="POST" class="flex items-end gap-3 flex-wrap">
                                     @csrf
                                     @method('PATCH')
+                                    @if($item->asset_type === 'stock')
+                                        <div>
+                                            <label class="block text-xs font-medium text-stone-500 mb-1">Ticker</label>
+                                            <input type="text" name="ticker_symbol" value="{{ $item->ticker_symbol }}" placeholder="e.g. RBLX" class="border border-stone-300 rounded px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-stone-400 uppercase">
+                                        </div>
+                                    @endif
                                     <div>
                                         <label class="block text-xs font-medium text-stone-500 mb-1">Quantity</label>
                                         <input type="text" name="quantity" value="{{ $item->quantity ? rtrim(rtrim(number_format($item->quantity, 8), '0'), '.') : '' }}" placeholder="0.00" class="border border-stone-300 rounded px-3 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
@@ -186,6 +216,7 @@
         // Toggle form fields based on asset type
         var typeSelect = document.getElementById('asset-type-select');
         var cryptoField = document.getElementById('crypto-asset-field');
+        var tickerField = document.getElementById('ticker-symbol-field');
         var quantityField = document.getElementById('quantity-field');
         var unitPriceField = document.getElementById('unit-price-field');
         var totalValueField = document.getElementById('total-value-field');
@@ -195,16 +226,19 @@
 
             if (type === 'crypto') {
                 cryptoField.classList.remove('hidden');
+                tickerField.classList.add('hidden');
                 quantityField.classList.remove('hidden');
                 unitPriceField.classList.remove('hidden');
                 totalValueField.classList.add('hidden');
             } else if (type === 'stock') {
                 cryptoField.classList.add('hidden');
+                tickerField.classList.remove('hidden');
                 quantityField.classList.remove('hidden');
                 unitPriceField.classList.remove('hidden');
                 totalValueField.classList.add('hidden');
             } else {
                 cryptoField.classList.add('hidden');
+                tickerField.classList.add('hidden');
                 quantityField.classList.add('hidden');
                 unitPriceField.classList.add('hidden');
                 totalValueField.classList.remove('hidden');
