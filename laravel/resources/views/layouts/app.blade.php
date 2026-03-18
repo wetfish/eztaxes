@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'eztaxes')</title>
+    <title>@yield('title', 'EzTaxes')</title>
     @vite('resources/css/app.css')
 </head>
 <body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col">
@@ -12,9 +12,9 @@
     {{-- Navigation --}}
     <nav class="bg-stone-900 text-stone-100">
         <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ url('/') }}" class="text-lg font-bold tracking-tight">eztaxes</a>
+            <a href="{{ url('/') }}" class="text-lg font-bold tracking-tight">EzTaxes</a>
             <div class="flex items-center gap-6 text-sm">
-                <a href="{{ url('/') }}" class="hover:text-white transition-colors {{ request()->is('/') ? 'text-white' : 'text-stone-400' }}">Dashboard</a>
+                <a href="{{ url('/') }}" class="hover:text-white transition-colors {{ request()->is('/') ? 'text-white' : 'text-stone-400' }}">Tax Years</a>
                 <a href="{{ url('/crypto') }}" class="hover:text-white transition-colors {{ request()->is('crypto*') ? 'text-white' : 'text-stone-400' }}">Crypto</a>
                 <a href="{{ url('/buckets') }}" class="hover:text-white transition-colors {{ request()->is('buckets*') ? 'text-white' : 'text-stone-400' }}">Buckets</a>
                 <a href="{{ url('/csv-templates') }}" class="hover:text-white transition-colors {{ request()->is('csv-templates*') ? 'text-white' : 'text-stone-400' }}">CSV Templates</a>
@@ -46,7 +46,7 @@
 
     {{-- Footer --}}
     <footer class="text-center text-xs text-stone-400 py-6">
-        eztaxes &mdash; S-Corp Tax Management
+        EzTaxes &mdash; S-Corp Tax Management
     </footer>
 
 </body>

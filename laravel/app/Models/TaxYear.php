@@ -33,4 +33,9 @@ class TaxYear extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function balanceSheetItems(): HasMany
+    {
+        return $this->hasMany(BalanceSheetItem::class);
+    }
 }

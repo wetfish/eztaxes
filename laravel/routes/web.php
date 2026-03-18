@@ -36,9 +36,14 @@ Route::post('/tax-years/{year}/balance-sheet/copy', [BalanceSheetController::cla
 Route::patch('/balance-sheet/{id}', [BalanceSheetController::class, 'update']);
 Route::delete('/balance-sheet/{id}', [BalanceSheetController::class, 'destroy']);
 
+// Bucket Groups
+Route::post('/bucket-groups', [BucketController::class, 'storeGroup']);
+Route::delete('/bucket-groups/{id}', [BucketController::class, 'destroyGroup']);
+
 // Buckets
 Route::get('/buckets', [BucketController::class, 'index']);
 Route::post('/buckets', [BucketController::class, 'store']);
+Route::patch('/buckets/{id}/group', [BucketController::class, 'updateGroup']);
 Route::delete('/buckets/{id}', [BucketController::class, 'destroy']);
 
 // Bucket Patterns

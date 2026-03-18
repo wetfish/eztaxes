@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - eztaxes')
+@section('title', 'Tax Years - EzTaxes')
 
 @section('content')
     <div class="flex items-center justify-between mb-8">

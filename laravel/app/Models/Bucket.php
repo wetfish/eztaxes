@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bucket extends Model
 {
     protected $fillable = [
+        'bucket_group_id',
         'name',
         'slug',
         'behavior',
@@ -23,6 +25,11 @@ class Bucket extends Model
             'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(BucketGroup::class, 'bucket_group_id');
     }
 
     public function patterns(): HasMany

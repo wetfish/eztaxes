@@ -1,4 +1,4 @@
-# eztaxes
+# EzTaxes
 
 A Laravel 12 dashboard for managing S-Corp business tax history, cryptocurrency cost basis tracking, and corporate balance sheets. Built to modernize an existing system of CSV reports and PHP regex-based transaction categorization.
 
