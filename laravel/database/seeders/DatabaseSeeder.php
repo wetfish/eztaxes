@@ -12,5 +12,9 @@ class DatabaseSeeder extends Seeder
             DefaultBucketGroupsSeeder::class,
             DefaultCsvTemplatesSeeder::class,
         ]);
+
+        if (config('demo.enabled')) {
+            $this->call(DemoSeeder::class);
+        }
     }
 }

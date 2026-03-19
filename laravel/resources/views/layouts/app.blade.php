@@ -24,6 +24,13 @@
         </div>
     </nav>
 
+    {{-- Demo Mode Banner --}}
+    @if(config('demo.enabled'))
+        <div class="bg-amber-500 text-white text-center text-sm font-medium py-2 px-4">
+            ⚠️ Demo Mode &mdash; This data is fictional and for demonstration purposes only. Do not use for financial decisions.
+        </div>
+    @endif
+
     {{-- Flash Messages --}}
     @if(session('success'))
         <div class="max-w-6xl mx-auto px-6 mt-4">
