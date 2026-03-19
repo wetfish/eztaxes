@@ -1,5 +1,4 @@
 # EzTaxes
-
 S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Track your corporate crypto treasury and stock assets. Features an auto-detecting CSV upload page with built-in templates for six supported formats from Gusto, Coinbase, and CashApp - PLUS the ability to upload your own banking records and categorize transactions with regex pattern matching.
 
 ## Integrations
@@ -186,3 +185,7 @@ Detailed technical documentation lives in the [`docs/`](docs/) directory:
 - [Frontend](docs/04-frontend.md) — Tailwind/Vite setup, Blade templates, view structure, UI conventions
 - [AI Development Notes](docs/05-ai-development-notes.md) — conventions for AI-assisted development with Claude
 - [Planned Features](docs/06-planned-features.md) — future feature roadmap
+
+## Disclaimer
+
+⚠️ EzTaxes is a personal financial tracking tool, not tax preparation software. Use it at your own risk. Always consult a qualified tax professional or financial advisor before filing your taxes. AI tools are great for double-checking your work, but they are not a substitute for professional advice.
