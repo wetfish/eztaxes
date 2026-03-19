@@ -58,6 +58,8 @@
             <p>Gusto Employee Payroll (custom report with pay date)</p>
             <p>Gusto US Contractor Payments</p>
             <p>Gusto International Contractor Payments</p>
+            <p>CashApp crypto transaction history</p>
+            <p>Coinbase gain/loss report</p>
         </div>
     </div>
 @endsection

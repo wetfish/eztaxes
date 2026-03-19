@@ -20,22 +20,39 @@ The top-level container. Each record represents one filing year.
 
 ### csv_templates
 
-Reusable column mappings for different CSV sources. Stored as JSON mapping internal field names to CSV column indices.
+Reusable column mappings for different CSV sources. Seeded templates provide auto-detection for known formats (Gusto, etc.). Custom templates can be saved during bank CSV imports.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint | primary key |
-| name | string | e.g. "Local Credit Union Checking" |
-| column_mapping | json | e.g. `{"date": 0, "amount": 2, "description": 1}` |
+| name | string | e.g. "Gusto Employee Payroll", "Local Credit Union Checking" |
+| column_mapping | json | e.g. `{"date": 0, "amount": 2, "description": 1}` or header-name-based for seeded templates |
+| detection_headers | json | nullable. Array of header names that must all be present to auto-detect this format |
+| is_seeded | boolean | default false. Built-in templates cannot be deleted |
+| timestamps | | created_at, updated_at |
+
+Seeded templates use header-name-based column mapping (e.g., `{"amount_header": "Check amount", "description_header": "Employee"}`) which is resolved to column indices at runtime. Custom templates use direct column indices.
+
+### bucket_groups
+
+Organizational containers for grouping related buckets. Groups are separate from buckets — they don't have patterns or behaviors. Default groups are seeded automatically: Client Income, Operating Expenses, Payroll, Assets, Ignored.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint | primary key |
+| name | string | e.g. "Client Income", "Operating Expenses" |
+| slug | string | unique, e.g. "client-income" |
+| sort_order | int | default 0 |
 | timestamps | | created_at, updated_at |
 
 ### buckets
 
-Categorization targets. A bucket groups related transactions (e.g., "contractors", "servers", "food"). Buckets are global — they apply across all tax years.
+Categorization targets. A bucket groups related transactions (e.g., "contractors", "servers", "food"). Buckets are global — they apply across all tax years. Each bucket can optionally belong to a bucket group.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint | primary key |
+| bucket_group_id | FK | nullable, references bucket_groups, null on delete |
 | name | string | e.g. "Server Bills" |
 | slug | string | unique, e.g. "server-bills" |
 | behavior | string | expected: `normal`, `ignored`, `informational` |
@@ -207,18 +224,73 @@ Corporate balance sheet line items tracked per tax year. Crypto items can option
 | sort_order | int | default 0 |
 | timestamps | | created_at, updated_at |
 
+## Payroll Tables
+
+### payroll_imports
+
+Import records for Gusto CSV files, similar to `imports` but for payroll data.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint | primary key |
+| tax_year_id | bigint | FK → tax_years, cascade delete |
+| csv_template_id | bigint | nullable FK → csv_templates, null on delete |
+| type | string | `employee`, `us_contractor`, `intl_contractor` |
+| original_filename | string | |
+| rows_total | int | default 0 |
+| imported_at | timestamp | nullable |
+| timestamps | | created_at, updated_at |
+
+### payroll_entries
+
+Individual payroll line items. One table for all three Gusto report types — type-specific fields are nullable.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint | primary key |
+| tax_year_id | bigint | FK → tax_years, cascade delete |
+| payroll_import_id | bigint | FK → payroll_imports, cascade delete |
+| type | string | `employee`, `us_contractor`, `intl_contractor` |
+| name | string | employee name or contractor name |
+| is_officer | boolean | default false. Officer pay → 1120-S Line 7, employee pay → Line 8 |
+| date | date | nullable. Dec 31 fallback for US contractors |
+| gross_pay | decimal(10,2) | Gross earnings (employee), Total Amount (US contractor), USD amount (intl) |
+| employee_deductions | decimal(10,2) | employee type only |
+| employer_contributions | decimal(10,2) | employee type only |
+| employee_taxes | decimal(10,2) | employee type only |
+| employer_taxes | decimal(10,2) | employee type only |
+| net_pay | decimal(10,2) | employee type only |
+| employer_cost | decimal(10,2) | employee type only |
+| check_amount | decimal(10,2) | employee type only |
+| wage_type | string | nullable, intl contractor only |
+| currency | string | nullable, intl contractor only |
+| foreign_amount | decimal(10,2) | nullable, intl contractor only |
+| payment_status | string | nullable, intl contractor only |
+| hours | decimal(8,2) | nullable, intl contractor only |
+| hourly_rate | decimal(8,2) | nullable, intl contractor only |
+| department | string | nullable, US contractor only |
+| tips_payment | decimal(10,2) | nullable, US contractor only |
+| tips_cash | decimal(10,2) | nullable, US contractor only |
+| notes | string | nullable. Pay period info for employees, memo for intl contractors |
+| timestamps | | created_at, updated_at |
+
 ## Model Relationships
 
 ```text
 TaxYear            → hasMany Imports, hasMany Transactions, hasMany BalanceSheetItems
-CsvTemplate        → hasMany Imports
-Bucket             → hasMany BucketPatterns, hasMany BucketScheduleLines
+                     hasMany PayrollImports, hasMany PayrollEntries
+CsvTemplate        → hasMany Imports, hasMany PayrollImports
+BucketGroup        → hasMany Buckets
+Bucket             → belongsTo BucketGroup (nullable)
+                     hasMany BucketPatterns, hasMany BucketScheduleLines
                      belongsToMany Transactions (pivot: bucket_transaction)
 BucketPattern      → belongsTo Bucket
 BucketScheduleLine → belongsTo Bucket
 Import             → belongsTo TaxYear, belongsTo CsvTemplate, hasMany Transactions
 Transaction        → belongsTo TaxYear, belongsTo Import
                      belongsToMany Buckets (pivot: bucket_transaction)
+PayrollImport      → belongsTo TaxYear, belongsTo CsvTemplate, hasMany PayrollEntries
+PayrollEntry       → belongsTo TaxYear, belongsTo PayrollImport
 CryptoAsset        → hasMany CryptoBuys, hasMany CryptoSells
 CryptoBuy          → belongsTo CryptoAsset
                      belongsToMany CryptoSells (pivot: crypto_buy_sell)
@@ -233,8 +305,14 @@ Deleting a **tax year** removes its imports → transactions → bucket_transact
 
 Deleting an **import** removes its transactions → bucket_transaction entries.
 
+Deleting a **bucket group** unassigns all its buckets (sets `bucket_group_id` to null). Buckets and their patterns are preserved.
+
 Deleting a **bucket** removes its patterns, schedule lines, and bucket_transaction entries. Transactions themselves are preserved.
 
 Deleting a **crypto asset** removes its buys → crypto_buy_sell entries, its sells → crypto_buy_sell entries, and nullifies linked balance sheet items.
 
 Deleting a **crypto sell** restores the allocated quantities on the referenced buys.
+
+Deleting a **payroll import** removes its payroll entries.
+
+Deleting a **tax year** also removes its payroll imports → payroll entries.

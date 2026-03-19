@@ -74,3 +74,15 @@ All status and type fields use string columns instead of MySQL ENUMs. ENUMs are 
 ## Privacy
 
 Avoid committing real financial institution names or personal data to the repository. References to specific banks should use generic names (e.g., "Local Credit Union" instead of the actual institution name). If sensitive data is accidentally committed, use `git filter-repo --replace-text` to rewrite history.
+
+## Data Separation
+
+Bank transactions, payroll, and crypto are three independent modules with separate database tables. Data is NEVER merged or double-counted between them. Gusto payroll data goes exclusively into the Payroll module — it should never be imported as bank transactions. If Gusto line items appear in a bank statement CSV (e.g., "GUSTO TYPE: NET"), they should be assigned to an "Ignored" bucket so they don't inflate expense totals, since the Payroll module already tracks those amounts with full detail. Similarly, crypto capital gains are tracked in the Crypto module and are not added to bank transaction totals.
+
+## Import Module Routing
+
+All CSV imports go through the global ImportController at `/import`. The controller uses seeded CSV template detection to route files to the correct module. When adding a new integration, add a seeded CsvTemplate with `detection_headers` and add the template name to `ImportController::TEMPLATE_ROUTES`.
+
+## Column Detection Priority
+
+When auto-detecting CSV columns, use a two-pass priority system: preferred/exact matches first (e.g., "description"), then alias fallbacks (e.g., "memo"). This prevents situations where an alias column is chosen over an exact match that appears earlier in the CSV. Use `findBestColumn()` in ImportController.

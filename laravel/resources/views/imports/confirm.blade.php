@@ -19,6 +19,8 @@
                 <p class="font-medium text-emerald-900">Detected: {{ $detectedTemplate->name }}</p>
                 @if($importModule === 'payroll')
                     <p class="text-sm text-emerald-700 mt-0.5">This will be imported into the Payroll module.</p>
+                @elseif($importModule === 'crypto')
+                    <p class="text-sm text-emerald-700 mt-0.5">This will be imported into the Crypto module. Select the asset below.</p>
                 @else
                     <p class="text-sm text-emerald-700 mt-0.5">Columns have been mapped automatically.</p>
                 @endif
@@ -42,44 +44,79 @@
             <input type="hidden" name="detected_template_id" value="{{ $detectedTemplate->id }}">
         @endif
 
-        {{-- Tax Year Selection --}}
-        <div class="bg-white border border-stone-200 rounded-lg p-6 mb-6 max-w-xl">
-            <h2 class="font-medium mb-4">Tax year</h2>
+        {{-- Crypto Asset Selection (crypto imports only) --}}
+        @if($importModule === 'crypto')
+            <div class="bg-white border border-stone-200 rounded-lg p-6 mb-6 max-w-xl">
+                <h2 class="font-medium mb-4">Crypto asset</h2>
 
-            @if($detectedYear)
-                <p class="text-sm text-stone-500 mb-3">
-                    Detected <strong>{{ $detectedYear }}</strong> from the file.
-                </p>
-            @endif
+                @if($detectedAssetSymbol)
+                    <p class="text-sm text-stone-500 mb-3">
+                        Detected <strong>{{ $detectedAssetSymbol }}</strong> from the file.
+                    </p>
+                @endif
 
-            <div class="flex items-center gap-4">
-                <select name="tax_year" id="tax_year" class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400" required>
-                    @if($detectedYear && !$taxYears->contains('year', $detectedYear))
-                        <option value="{{ $detectedYear }}" selected>{{ $detectedYear }} (new)</option>
-                    @endif
-                    @foreach($taxYears as $ty)
-                        <option value="{{ $ty->year }}" {{ $detectedYear == $ty->year ? 'selected' : '' }}>
-                            {{ $ty->year }}
+                <select name="crypto_asset_id" id="crypto_asset_id" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400" required onchange="toggleNewAssetFields(this)">
+                    @foreach($cryptoAssets as $asset)
+                        <option value="{{ $asset->id }}" {{ $detectedAssetSymbol && strtoupper($asset->symbol) === strtoupper($detectedAssetSymbol) ? 'selected' : '' }}>
+                            {{ $asset->name }} ({{ $asset->symbol }})
                         </option>
                     @endforeach
-                    @if(!$detectedYear && $taxYears->isEmpty())
-                        <option value="{{ date('Y') }}" selected>{{ date('Y') }} (new)</option>
-                    @endif
+                    <option value="new">+ Create new asset</option>
                 </select>
 
-                <span class="text-stone-400 text-sm">or</span>
-
-                <input
-                    type="number"
-                    id="new_year_input"
-                    placeholder="New year"
-                    min="2000"
-                    max="2099"
-                    class="border border-stone-300 rounded px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-stone-400"
-                >
-                <button type="button" id="add_year_btn" class="text-sm text-stone-600 hover:text-stone-800 underline">Add</button>
+                <div id="new_asset_fields" class="grid gap-3 mt-4" style="display: none;">
+                    <div>
+                        <label for="new_asset_name" class="block text-sm font-medium mb-1">Asset name</label>
+                        <input type="text" name="new_asset_name" id="new_asset_name" placeholder="e.g. Bitcoin" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    </div>
+                    <div>
+                        <label for="new_asset_symbol" class="block text-sm font-medium mb-1">Symbol</label>
+                        <input type="text" name="new_asset_symbol" id="new_asset_symbol" placeholder="e.g. BTC" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    </div>
+                </div>
             </div>
-        </div>
+        @endif
+
+        {{-- Tax Year Selection (bank and payroll only) --}}
+        @if($importModule !== 'crypto')
+            <div class="bg-white border border-stone-200 rounded-lg p-6 mb-6 max-w-xl">
+                <h2 class="font-medium mb-4">Tax year</h2>
+
+                @if($detectedYear)
+                    <p class="text-sm text-stone-500 mb-3">
+                        Detected <strong>{{ $detectedYear }}</strong> from the file.
+                    </p>
+                @endif
+
+                <div class="flex items-center gap-4">
+                    <select name="tax_year" id="tax_year" class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400" required>
+                        @if($detectedYear && !$taxYears->contains('year', $detectedYear))
+                            <option value="{{ $detectedYear }}" selected>{{ $detectedYear }} (new)</option>
+                        @endif
+                        @foreach($taxYears as $ty)
+                            <option value="{{ $ty->year }}" {{ $detectedYear == $ty->year ? 'selected' : '' }}>
+                                {{ $ty->year }}
+                            </option>
+                        @endforeach
+                        @if(!$detectedYear && $taxYears->isEmpty())
+                            <option value="{{ date('Y') }}" selected>{{ date('Y') }} (new)</option>
+                        @endif
+                    </select>
+
+                    <span class="text-stone-400 text-sm">or</span>
+
+                    <input
+                        type="number"
+                        id="new_year_input"
+                        placeholder="New year"
+                        min="2000"
+                        max="2099"
+                        class="border border-stone-300 rounded px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-stone-400"
+                    >
+                    <button type="button" id="add_year_btn" class="text-sm text-stone-600 hover:text-stone-800 underline">Add</button>
+                </div>
+            </div>
+        @endif
 
         {{-- Column Mapping (bank imports only) --}}
         @if($importModule === 'bank')
@@ -169,32 +206,49 @@
 
         <div class="flex items-center gap-3">
             <button type="submit" class="bg-stone-800 text-white px-6 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
-                Import {{ $rowCount }} {{ $importModule === 'payroll' ? 'Payroll Entries' : 'Transactions' }}
+                @if($importModule === 'payroll')
+                    Import {{ $rowCount }} Payroll Entries
+                @elseif($importModule === 'crypto')
+                    Import Crypto Transactions
+                @else
+                    Import {{ $rowCount }} Transactions
+                @endif
             </button>
             <a href="{{ url('/import') }}" class="text-sm text-stone-500 hover:text-stone-700">Cancel</a>
         </div>
     </form>
 
     <script>
-        document.getElementById('add_year_btn').addEventListener('click', function() {
-            const input = document.getElementById('new_year_input');
-            const select = document.getElementById('tax_year');
-            const year = parseInt(input.value);
+        // New year input for tax year
+        const addYearBtn = document.getElementById('add_year_btn');
+        if (addYearBtn) {
+            addYearBtn.addEventListener('click', function() {
+                const input = document.getElementById('new_year_input');
+                const select = document.getElementById('tax_year');
+                const year = parseInt(input.value);
 
-            if (year >= 2000 && year <= 2099) {
-                // Check if option already exists
-                for (let opt of select.options) {
-                    if (parseInt(opt.value) === year) {
-                        opt.selected = true;
-                        input.value = '';
-                        return;
+                if (year >= 2000 && year <= 2099) {
+                    for (let opt of select.options) {
+                        if (parseInt(opt.value) === year) {
+                            opt.selected = true;
+                            input.value = '';
+                            return;
+                        }
                     }
-                }
 
-                const option = new Option(year + ' (new)', year, true, true);
-                select.insertBefore(option, select.firstChild);
-                input.value = '';
+                    const option = new Option(year + ' (new)', year, true, true);
+                    select.insertBefore(option, select.firstChild);
+                    input.value = '';
+                }
+            });
+        }
+
+        // Crypto asset "create new" toggle
+        function toggleNewAssetFields(select) {
+            const fields = document.getElementById('new_asset_fields');
+            if (fields) {
+                fields.style.display = select.value === 'new' ? 'grid' : 'none';
             }
-        });
+        }
     </script>
 @endsection

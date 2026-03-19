@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CryptoAsset;
 use App\Models\CsvTemplate;
 use App\Models\Import;
 use App\Models\TaxYear;
+use App\Services\CryptoImporter;
 use App\Services\CsvImporter;
 use App\Services\PayrollImporter;
 use App\Services\TaxYearCalculator;
@@ -14,12 +16,14 @@ use Illuminate\Support\Facades\Storage;
 class ImportController extends Controller
 {
     /**
-     * Map seeded template names to their import module and payroll type.
+     * Map seeded template names to their import module and sub-type.
      */
     private const TEMPLATE_ROUTES = [
         'Gusto Employee Payroll' => ['module' => 'payroll', 'type' => 'employee'],
         'Gusto US Contractors' => ['module' => 'payroll', 'type' => 'us_contractor'],
         'Gusto International Contractors' => ['module' => 'payroll', 'type' => 'intl_contractor'],
+        'CashApp Crypto' => ['module' => 'crypto', 'type' => 'cashapp'],
+        'Coinbase Gain/Loss' => ['module' => 'crypto', 'type' => 'coinbase'],
     ];
 
     public function create()
@@ -37,7 +41,7 @@ class ImportController extends Controller
         return redirect('/import');
     }
 
-    public function upload(Request $request, CsvImporter $importer)
+    public function upload(Request $request, CsvImporter $importer, CryptoImporter $cryptoImporter)
     {
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:10240',
@@ -100,30 +104,35 @@ class ImportController extends Controller
         $detectedYear = $importer->detectYear($rows, $headerRowIndex, $mappedColumns);
         $taxYears = TaxYear::orderByDesc('year')->get();
 
+        // For crypto imports, detect the asset symbol and load available assets
+        $cryptoAssets = collect();
+        $detectedAssetSymbol = null;
+
+        if ($importModule === 'crypto') {
+            $cryptoAssets = CryptoAsset::orderBy('name')->get();
+            $detectedAssetSymbol = $cryptoImporter->detectAssetSymbol($rows, $headerRowIndex);
+        }
+
         return view('imports.confirm', compact(
             'headers', 'preview', 'rowCount',
             'filename', 'storedFile', 'mappedColumns', 'headerRowIndex',
-            'detectedTemplate', 'importModule', 'detectedYear', 'taxYears'
+            'detectedTemplate', 'importModule', 'detectedYear', 'taxYears',
+            'cryptoAssets', 'detectedAssetSymbol'
         ));
     }
 
-    public function process(Request $request, CsvImporter $csvImporter, PayrollImporter $payrollImporter)
-    {
+    public function process(
+        Request $request,
+        CsvImporter $csvImporter,
+        PayrollImporter $payrollImporter,
+        CryptoImporter $cryptoImporter
+    ) {
         $request->validate([
             'stored_file' => 'required|string',
             'filename' => 'required|string',
             'header_row_index' => 'required|integer|min:0',
-            'import_module' => 'required|string|in:bank,payroll',
-            'tax_year' => 'required|integer|min:2000|max:2099',
+            'import_module' => 'required|string|in:bank,payroll,crypto',
         ]);
-
-        $year = (int) $request->input('tax_year');
-
-        // Find or create the tax year
-        $taxYear = TaxYear::firstOrCreate(
-            ['year' => $year],
-            ['filing_status' => 'draft', 'total_income' => 0, 'total_expenses' => 0]
-        );
 
         $storedFile = $request->input('stored_file');
         $filepath = Storage::path($storedFile);
@@ -135,9 +144,27 @@ class ImportController extends Controller
         $headerRowIndex = (int) $request->input('header_row_index');
         $importModule = $request->input('import_module');
 
+        // Crypto imports don't require a tax year
+        if ($importModule !== 'crypto') {
+            $request->validate([
+                'tax_year' => 'required|integer|min:2000|max:2099',
+            ]);
+
+            $year = (int) $request->input('tax_year');
+
+            $taxYear = TaxYear::firstOrCreate(
+                ['year' => $year],
+                ['filing_status' => 'draft', 'total_income' => 0, 'total_expenses' => 0]
+            );
+        }
+
         // Route to the correct importer
         if ($importModule === 'payroll') {
             return $this->processPayroll($request, $taxYear, $payrollImporter, $csvImporter, $filepath, $headerRowIndex);
+        }
+
+        if ($importModule === 'crypto') {
+            return $this->processCrypto($request, $cryptoImporter, $csvImporter, $filepath, $headerRowIndex);
         }
 
         return $this->processBank($request, $taxYear, $csvImporter, $filepath, $headerRowIndex);
@@ -158,7 +185,6 @@ class ImportController extends Controller
         $filename = $request->input('filename');
         $csvTemplateId = $request->input('detected_template_id') ? (int) $request->input('detected_template_id') : null;
 
-        // Determine the payroll type from the detected template
         $templateName = null;
 
         if ($csvTemplateId) {
@@ -191,6 +217,93 @@ class ImportController extends Controller
 
         return redirect("/payroll/{$year}")
             ->with('success', "Imported {$import->rows_total} {$typeLabel} entries.");
+    }
+
+    /**
+     * Process a crypto CSV import.
+     */
+    private function processCrypto(
+        Request $request,
+        CryptoImporter $importer,
+        CsvImporter $csvImporter,
+        string $filepath,
+        int $headerRowIndex
+    ) {
+        $request->validate([
+            'crypto_asset_id' => 'required',
+        ]);
+
+        $cryptoAssetId = $request->input('crypto_asset_id');
+
+        // Handle "create new" asset
+        if ($cryptoAssetId === 'new') {
+            $request->validate([
+                'new_asset_name' => 'required|string|max:255',
+                'new_asset_symbol' => 'required|string|max:20|unique:crypto_assets,symbol',
+            ]);
+
+            $asset = CryptoAsset::create([
+                'name' => $request->input('new_asset_name'),
+                'symbol' => strtoupper(trim($request->input('new_asset_symbol'))),
+            ]);
+        } else {
+            $asset = CryptoAsset::findOrFail($cryptoAssetId);
+        }
+
+        // Determine format from template
+        $csvTemplateId = $request->input('detected_template_id') ? (int) $request->input('detected_template_id') : null;
+        $templateName = null;
+
+        if ($csvTemplateId) {
+            $template = CsvTemplate::find($csvTemplateId);
+            $templateName = $template?->name;
+        }
+
+        $cryptoType = self::TEMPLATE_ROUTES[$templateName]['type'] ?? null;
+
+        if (!$cryptoType) {
+            // Fall back to auto-detection from headers
+            $rows = $csvImporter->parseFile($filepath);
+            $cryptoType = $importer->detectFormat($rows, $headerRowIndex);
+        }
+
+        if (!$cryptoType) {
+            Storage::delete($request->input('stored_file'));
+            return redirect('/import')->with('error', 'Could not determine crypto import format.');
+        }
+
+        $rows = $csvImporter->parseFile($filepath);
+
+        try {
+            if ($cryptoType === 'coinbase') {
+                $result = $importer->importCoinbase($asset, $rows, $headerRowIndex);
+
+                $message = "Coinbase import complete: {$result['pairs']} sell transaction" . ($result['pairs'] !== 1 ? 's' : '') . " with cost basis fully allocated.";
+
+                if ($result['skipped'] > 0) {
+                    $message .= " {$result['skipped']} rows skipped.";
+                }
+            } else {
+                $result = $importer->importCashApp($asset, $rows, $headerRowIndex);
+
+                $message = "CashApp import complete: {$result['buys']} buys, {$result['sells']} sells.";
+
+                if ($result['skipped'] > 0) {
+                    $message .= " {$result['skipped']} rows skipped.";
+                }
+
+                if ($result['sells'] > 0) {
+                    $message .= " Sells need buy allocation — see unallocated sells below.";
+                }
+            }
+        } catch (\RuntimeException $e) {
+            Storage::delete($request->input('stored_file'));
+            return redirect('/import')->with('error', $e->getMessage());
+        }
+
+        Storage::delete($request->input('stored_file'));
+
+        return redirect("/crypto/{$asset->id}")->with('success', $message);
     }
 
     /**
@@ -323,15 +436,12 @@ class ImportController extends Controller
 
         $headerLower = array_map('strtolower', array_map('trim', $headers));
 
-        // Date: prefer exact matches first, then aliases
         $datePreferred = ['date', 'posting date', 'transaction date'];
         $dateAliases = ['trans date', 'payroll pay date', 'processing date', 'check date'];
 
-        // Amount: prefer exact matches first, then aliases
         $amountPreferred = ['amount', 'transaction amount'];
         $amountAliases = ['debit', 'credit', 'check amount', 'net pay', 'total amount', 'usd amount'];
 
-        // Description: prefer exact matches first, then aliases
         $descPreferred = ['description', 'transaction description'];
         $descAliases = ['memo', 'details', 'narrative', 'employee', 'contractor name'];
 
@@ -357,14 +467,12 @@ class ImportController extends Controller
      */
     private function findBestColumn(array $headerLower, array $preferred, array $aliases): ?int
     {
-        // First pass: preferred (exact) matches
         foreach ($headerLower as $index => $header) {
             if (in_array($header, $preferred)) {
                 return $index;
             }
         }
 
-        // Second pass: alias matches
         foreach ($headerLower as $index => $header) {
             if (in_array($header, $aliases)) {
                 return $index;

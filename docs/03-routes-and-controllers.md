@@ -23,13 +23,28 @@ POST /transactions/{id}/assign-bucket     → TransactionController@assignBucket
 POST /transactions/create-pattern         → TransactionController@createPattern
 ```
 
-### CSV Imports
+### CSV Imports (Global)
 
 ```text
-GET  /tax-years/{year}/import             → ImportController@create
-POST /tax-years/{year}/import             → ImportController@upload
-POST /tax-years/{year}/import/process     → ImportController@process
+GET  /import                              → ImportController@create
+POST /import                              → ImportController@upload
+POST /import/process                      → ImportController@process
 DELETE /imports/{id}                       → ImportController@destroy
+```
+
+Legacy route for backward compatibility:
+
+```text
+GET  /tax-years/{year}/import             → ImportController@createLegacy (redirects to /import)
+```
+
+### Payroll
+
+```text
+GET  /payroll                             → PayrollController@index
+GET  /payroll/{year}                      → PayrollController@show
+POST /payroll/{year}/toggle-officer       → PayrollController@toggleOfficer
+DELETE /payroll/imports/{id}              → PayrollController@destroyImport
 ```
 
 ### Balance Sheet
@@ -39,104 +54,106 @@ GET  /tax-years/{year}/balance-sheet      → BalanceSheetController@index
 POST /tax-years/{year}/balance-sheet      → BalanceSheetController@store
 GET  /tax-years/{year}/balance-sheet/copy → BalanceSheetController@copyPreview
 POST /tax-years/{year}/balance-sheet/copy → BalanceSheetController@copyProcess
-PATCH  /balance-sheet/{id}                → BalanceSheetController@update
-DELETE /balance-sheet/{id}                → BalanceSheetController@destroy
+POST /tax-years/{year}/balance-sheet/fetch-prices → BalanceSheetController@fetchPrices
+PATCH  /balance-sheet/{id}               → BalanceSheetController@update
+DELETE /balance-sheet/{id}               → BalanceSheetController@destroy
 ```
 
-### Buckets & Patterns
+### Bucket Groups
 
 ```text
-GET  /buckets                             → BucketController@index
-POST /buckets                             → BucketController@store
+POST   /bucket-groups                     → BucketController@storeGroup
+DELETE /bucket-groups/{id}               → BucketController@destroyGroup
+```
+
+### Buckets
+
+```text
+GET    /buckets                           → BucketController@index
+POST   /buckets                           → BucketController@store
+PATCH  /buckets/{id}/group               → BucketController@updateGroup
 DELETE /buckets/{id}                      → BucketController@destroy
-POST /buckets/{id}/patterns               → BucketController@addPattern
+```
+
+### Bucket Patterns
+
+```text
+POST   /buckets/{id}/patterns            → BucketController@addPattern
 DELETE /patterns/{id}                     → BucketController@deletePattern
 ```
 
 ### CSV Templates
 
 ```text
-GET  /csv-templates                       → CsvTemplateController@index
-DELETE /csv-templates/{id}                → CsvTemplateController@destroy
+GET    /csv-templates                     → CsvTemplateController@index
+DELETE /csv-templates/{id}               → CsvTemplateController@destroy
 ```
 
 ### Crypto
 
 ```text
-GET  /crypto                              → CryptoController@index
-POST /crypto                              → CryptoController@store
-DELETE /crypto/buys/{id}                  → CryptoController@deleteBuy
-DELETE /crypto/sells/{id}                 → CryptoController@deleteSell
-GET  /crypto/sells/{id}/allocate          → CryptoController@allocateSell
-POST /crypto/sells/{id}/allocate          → CryptoController@storeAllocation
-GET  /crypto/{id}                         → CryptoController@show
+GET    /crypto                            → CryptoController@index
+POST   /crypto                            → CryptoController@store
+DELETE /crypto/buys/{id}                 → CryptoController@deleteBuy
+DELETE /crypto/sells/{id}                → CryptoController@deleteSell
+GET    /crypto/sells/{id}/allocate       → CryptoController@allocateSell
+POST   /crypto/sells/{id}/allocate       → CryptoController@storeAllocation
+GET    /crypto/{id}                       → CryptoController@show
 DELETE /crypto/{id}                       → CryptoController@destroy
-POST /crypto/{id}/buys                    → CryptoController@storeBuy
-GET  /crypto/{id}/sell                    → CryptoController@createSell
-POST /crypto/{id}/sells                   → CryptoController@storeSell
-GET  /crypto/{id}/import                  → CryptoController@importForm
-POST /crypto/{id}/import                  → CryptoController@importProcess
+POST   /crypto/{id}/buys                 → CryptoController@storeBuy
+GET    /crypto/{id}/sell                  → CryptoController@createSell
+POST   /crypto/{id}/sells                → CryptoController@storeSell
+GET    /crypto/{id}/import               → CryptoController@importForm
+POST   /crypto/{id}/import               → CryptoController@importProcess
 ```
-
-**Routing note:** specific routes like `/crypto/sells/{id}/allocate` and `/crypto/buys/{id}` must be defined before the wildcard `/crypto/{id}` to avoid incorrect matching.
 
 ## Controller Responsibilities
 
+### ImportController
+
+The central import controller handling all CSV uploads. Uses a `TEMPLATE_ROUTES` constant to map detected template names to their target module (`bank` or `payroll`). Key flow:
+
+1. `create()` — renders the global upload page at `/import`
+2. `upload()` — parses the CSV, scans for headers past preamble rows, detects the format via seeded CSV templates, auto-detects the tax year (from preamble date ranges for Gusto, from transaction dates for bank CSVs), and resolves column mappings
+3. `process()` — routes to `processPayroll()` or `processBank()` based on the `import_module` field. Creates the tax year if it doesn't exist.
+
+Auto-detection uses `CsvTemplate::matchesHeaders()` which checks if all of a template's `detection_headers` are present in the CSV. Column mapping for seeded templates uses header-name-based resolution (e.g., `amount_header: "Check amount"` resolved to the actual column index at runtime).
+
+For bank CSVs, `autoDetectColumns()` uses a two-pass priority system: preferred/exact matches first (e.g., "description"), then alias fallbacks (e.g., "memo"), so an exact "Description" column always wins over a "Memo" column.
+
+### PayrollController
+
+Manages the Payroll module with summary views and officer designation.
+
+- `index()` — tax year overview with officer/employee/contractor/tax summaries per year
+- `show()` — detailed year view with 1120-S tax line references, per-employee summaries with officer toggle badges, per-contractor summaries, and expandable detail views
+- `toggleOfficer()` — updates `is_officer` on all entries matching a given employee name within a tax year. Recalculates Line 7 vs Line 8 split automatically.
+- `destroyImport()` — deletes a payroll import and cascading entries
+
 ### DashboardController
 
-Lists all tax years with income/expense/net summaries. Inline form to create new tax years.
+Lists all tax years with cached `total_income` and `total_expenses` summary cards.
 
 ### TaxYearController
 
-**store** — creates a new tax year with `filing_status: draft`.
-
-**show** — displays the year detail page with summary cards (income, expenses, net), expandable bucket breakdown table (click a row to reveal its transactions), unmatched transaction alert, and import history with delete.
+Creates tax years and shows detail page with bucket group breakdown computed on the fly, import history with delete links.
 
 ### TransactionController
 
-**index** — transaction list with All/Matched/Unmatched filter tabs. Pattern builder at top: enter a regex, test it against all transactions, see match count, then save to a bucket. Manual quick-assign collapsible per unmatched transaction. "Create pattern" button auto-fills the pattern builder from a transaction description.
-
-**assignBucket** — manually assigns a transaction to a bucket.
-
-**createPattern** — saves a new pattern and re-runs matching on all unmatched transactions for the year.
-
-### ImportController
-
-Two-step CSV upload flow:
-
-1. **create/upload** — upload a CSV file, auto-detect columns, select or create a template mapping
-2. **process** — confirm mapping and process the import
-
-Uses Laravel Storage for temp files between steps.
-
-### BalanceSheetController
-
-**index** — lists balance sheet items for a tax year. Add form dynamically adjusts fields by asset type (crypto/stock show quantity + price; cash/other show total value). Click a row to expand inline edit. Crypto items show activity hints (tracked holdings, buys/sells for the year). "Copy from {previous year}" button when applicable.
-
-**copyPreview** — shows each item from the previous year as a card with previous values, crypto activity adjustments, and editable fields for the new year. Suggested quantities are pre-calculated from previous quantity ± tracked buys/sells.
-
-**copyProcess** — creates new balance sheet items from the reviewed/adjusted copy form.
-
-### BucketController
-
-**index** — lists all buckets with inline create form. Each bucket shows its patterns in a collapsible section with add/delete. Bucket delete with confirmation.
-
-**addPattern** — validates regex before saving.
-
-### CsvTemplateController
-
-**index** — lists saved CSV templates with delete.
+Transaction list with filter tabs (all/matched/unmatched), pattern builder (test regex against live data, see match count, save to bucket), and manual quick-assign for unmatched transactions.
 
 ### CryptoController
 
-**index** — lists all crypto assets with current holdings and a form to add new assets.
+Full CRUD for crypto assets, buys, and sells. Multi-format CSV import with auto-detection (CashApp vs Coinbase). Sell allocation page for specific identification. Tax year reporting with IRS form references. Balance sheet cross-referencing with discrepancy warnings.
 
-**show** — asset detail page with summary cards (holdings, cost basis, total proceeds, gain/loss), tax reporting by year (short-term/long-term with IRS form references), sells table (unallocated first with amber highlight, allocated expandable to show buy allocations), buys table, and record buy form. Buttons for "Record Sell" and "Import CSV".
+### BalanceSheetController
 
-**createSell / storeSell** — sell form with scrollable buy allocation table. Max button fills min(buy remaining, sell total − other allocations). `enforceLimit()` on every keystroke. Total allocated counter updates live.
+CRUD for balance sheet items per tax year. Copy-from-previous-year with crypto activity suggestions. Inline edit rows. "Fetch Dec 31 Prices" button calls PriceLookupService (CryptoCompare for crypto, Alpha Vantage for stocks with 15-second delays).
 
-**allocateSell / storeAllocation** — same allocation UI for retroactive assignment of unallocated sells.
+### BucketController
 
-**importForm / importProcess** — CSV upload for crypto transactions. Auto-detects CashApp format columns (Transaction Type for buy/sell distinction). `cleanNumeric()` helper strips commas, currency symbols, and whitespace.
+CRUD for bucket groups and buckets. Groups are a separate table from buckets. Assign/move buckets between groups. Pattern management (add/delete).
 
-**deleteSell** — deletes a sell and restores allocated quantities on referenced buys.
+### CsvTemplateController
+
+Lists all templates (seeded shown with "Built-in" badge, custom templates deletable). Protects seeded templates from deletion.

@@ -10,11 +10,12 @@ class DefaultCsvTemplatesSeeder extends Seeder
     public function run(): void
     {
         $templates = [
+            // ─── Gusto ───
             [
                 'name' => 'Gusto Employee Payroll',
                 'detection_headers' => ['Employee', 'Gross earnings', 'Net pay', 'Payroll pay date'],
                 'column_mapping' => [
-                    'date' => null,    // resolved dynamically by header name
+                    'date' => null,
                     'amount' => null,
                     'description' => null,
                     'date_header' => 'Payroll pay date',
@@ -26,7 +27,7 @@ class DefaultCsvTemplatesSeeder extends Seeder
                 'name' => 'Gusto US Contractors',
                 'detection_headers' => ['Last Name', 'First Name', 'Total Amount'],
                 'column_mapping' => [
-                    'date' => -1,      // no date column — use Dec 31 fallback
+                    'date' => -1,
                     'amount' => null,
                     'description' => null,
                     'amount_header' => 'Total Amount',
@@ -43,6 +44,22 @@ class DefaultCsvTemplatesSeeder extends Seeder
                     'date_header' => 'Processing date',
                     'amount_header' => 'USD amount',
                     'description_header' => 'Contractor name',
+                ],
+            ],
+
+            // ─── Crypto ───
+            [
+                'name' => 'CashApp Crypto',
+                'detection_headers' => ['Transaction Type', 'Asset Amount', 'Asset Price'],
+                'column_mapping' => [
+                    'format' => 'cashapp',
+                ],
+            ],
+            [
+                'name' => 'Coinbase Gain/Loss',
+                'detection_headers' => ['Date of Disposition', 'Cost basis (USD)', 'Proceeds (USD)'],
+                'column_mapping' => [
+                    'format' => 'coinbase',
                 ],
             ],
         ];

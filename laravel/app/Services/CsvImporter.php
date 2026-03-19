@@ -59,6 +59,11 @@ class CsvImporter
             'last name', 'first name', 'total amount',
             // Gusto international contractor headers
             'contractor name', 'processing date', 'usd amount', 'wage type',
+            // CashApp crypto headers
+            'transaction type', 'asset amount', 'asset price', 'asset name',
+            // Coinbase gain/loss headers
+            'date of disposition', 'date acquired', 'cost basis (usd)', 'proceeds (usd)',
+            'gains (losses) (usd)', 'holding period (days)',
         ];
 
         foreach ($rows as $index => $row) {

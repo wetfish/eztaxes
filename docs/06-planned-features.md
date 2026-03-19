@@ -4,11 +4,7 @@ These features are not yet implemented. Documented here for future reference and
 
 ## Multi-User Support
 
-Add a `users` table and `user_id` foreign key columns to `tax_years`, `buckets`, and `csv_templates`. Transactions and imports inherit user scoping through their tax_year relationship, so they don't need direct user_id columns. All queries would be scoped by the authenticated user.
-
-## Bucket Hierarchy
-
-Add a nullable `parent_id` (self-referencing FK) to `buckets`. This enables roll-up reporting where child buckets (e.g., "gusto payroll", "gusto tax") aggregate under a parent ("payroll"). Query logic would sum child bucket totals into the parent for reports.
+Add a `users` table and `user_id` foreign key columns to `tax_years`, `buckets`, and `csv_templates`. Transactions, imports, payroll entries, and balance sheet items inherit user scoping through their tax_year relationship. All queries would be scoped by the authenticated user.
 
 ## Schedule Line Management UI
 
@@ -22,26 +18,18 @@ The tax year `filing_status` field (draft/filed/amended) can only be set at crea
 
 Buckets can be created and deleted but not edited (name, behavior, description). Add inline editing or a detail page for modifying bucket properties.
 
-## Asset Price API Integration
-
-The balance sheet currently requires manual entry of Dec 31 asset prices. Potential integrations:
-
-- **CoinGecko** (crypto) — free tier with 10,000 calls/month, historical price endpoint by date
-- **Alpha Vantage** (stocks) — free tier with 25 calls/day, daily historical price endpoint
-
-Implementation would add a "Fetch Price" button next to each balance sheet item that suggests a value the user can review and confirm before saving. Prices would never be auto-saved without user confirmation.
-
 ## Fixed Asset Depreciation
 
-The balance sheet currently tracks asset values but does not calculate depreciation. When needed, add fields for:
-
-- Date placed in service
-- Depreciation method (straight-line, MACRS, Section 179)
-- Useful life in years
-- Accumulated depreciation
-
-This would feed into IRS Form 4562 (Depreciation and Amortization). The annual depreciation deduction would reduce the asset's book value on each year's balance sheet.
+The balance sheet currently tracks asset values but does not calculate depreciation. When needed, add fields for: date placed in service, depreciation method (straight-line, MACRS, Section 179), useful life in years, and accumulated depreciation. This would feed into IRS Form 4562 (Depreciation and Amortization).
 
 ## Balance Sheet Liabilities & Equity
 
 The balance sheet currently tracks assets only. For a complete IRS Schedule L (Form 1120-S), add support for liabilities (accounts payable, loans) and equity (capital stock, retained earnings). The `asset_type` field on `balance_sheet_items` could be extended with a `category` field (asset/liability/equity) or a separate table structure.
+
+## 1120-S Form Generation
+
+Aggregate data from all three modules (bank transactions, payroll, crypto) into a consolidated 1120-S summary view. Map bucket totals to their schedule lines, combine with payroll tax line references and crypto capital gains data, and generate a printable/exportable summary matching the 1120-S form layout.
+
+## Payroll Officer Persistence Across Imports
+
+Currently, officer designation is set per-employee-name per-tax-year. When a new payroll CSV is imported, new entries for an already-designated officer default to `is_officer: false`. Consider auto-detecting officer status from previous imports for the same name within the same tax year.

@@ -1,32 +1,74 @@
 # EzTaxes
 
-A Laravel 12 dashboard for managing S-Corp business tax history, cryptocurrency cost basis tracking, and corporate balance sheets. Built to modernize an existing system of CSV reports and PHP regex-based transaction categorization.
+S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Track your corporate crypto treasury and stock assets. Features an auto-detecting CSV upload page with built-in templates for six supported formats from Gusto, Coinbase, and CashApp - PLUS the ability to upload your own banking records and categorize transactions with regex pattern matching.
+
+## Integrations
+
+**Gusto Payroll** — Import employee payroll, US contractor payments, and international contractor payments directly from Gusto CSV exports. Auto-detects all three report formats, skips preamble rows and summary totals, and routes data into a dedicated Payroll module with 1120-S tax line references (Lines 7, 8, 12, 19). Mark employees as officers to split compensation between Line 7 (Officer Compensation) and Line 8 (Salaries and Wages).
+
+**Coinbase** — Import gain/loss reports with fully-allocated buy+sell pairs. Cost basis, proceeds, and holding period are pre-calculated. Supports the multi-line preamble format Coinbase uses.
+
+**CashApp** — Import transaction history with automatic separation of buys and sells. Sells are queued for manual cost basis allocation using the specific identification method.
+
+**CryptoCompare API** — Free API (no key required) for fetching December 31 year-end crypto prices on the balance sheet.
+
+**Alpha Vantage API** — Free tier (25 calls/day) for fetching December 31 year-end stock prices on the balance sheet. Includes rate limiting with 15-second delays between calls.
+
+**Bank Statements** — Upload CSV exports from any bank or financial institution. Auto-detects common column names (Date, Amount, Description, Posting Date, Memo, etc.) with a priority-based matching system that prefers exact matches over aliases. Save column mappings as reusable templates for repeat imports.
+
+## Smart CSV Upload
+
+One global import page for everything. Upload any CSV and the system automatically detects the format, identifies the tax year from the data, and routes to the correct module:
+
+- Gusto files → Payroll module (employee wages, contractor payments)
+- CashApp / Coinbase files → Crypto module (buys, sells, cost basis) with auto-detected asset symbol
+- Bank statements → Transaction module (categorization, pattern matching)
+
+Built-in templates are seeded on setup for all six supported formats. The confirmation page shows what was detected with a green banner (e.g., "Detected: Coinbase Gain/Loss") and lets you review before importing. Crypto imports auto-detect the asset and let you select or create one. Bank imports let you adjust the column mapping and save custom templates.
 
 ## Features
 
+### Payroll Management
+- Three Gusto CSV formats: Employee Payroll, US Contractor Payments, International Contractor Payments
+- Officer/employee designation — toggle per person, splits totals between 1120-S Lines 7 and 8
+- Per-employee and per-contractor summaries with expandable detail views
+- Tax reconciliation entries (negative employer taxes) handled automatically
+- 1120-S tax line references: Line 7 (Officer Compensation), Line 8 (Salaries and Wages), Line 12 (Employer Taxes), Line 17 (Employer Contributions), Line 19 (Total Contractors with US/Intl breakdown)
+- Summary rows ("Grand totals", "Total Report", "All contractors") automatically filtered out during import
+
 ### Transaction Import & Categorization
-- Upload bank CSV files with auto-detected column mapping
+- Upload bank CSV files with auto-detected column mapping and priority-based header matching
+- Preamble scanning — handles CSVs with metadata rows before the actual headers
+- Delimiter auto-detection (comma vs tab)
 - Regex pattern matching for automatic transaction categorization
 - Multi-bucket tagging — a single transaction can belong to multiple categories
+- Bucket groups for organizing buckets into categories (Client Income, Operating Expenses, Payroll, Assets, Ignored)
+- Default groups seeded automatically on setup
+- Tax year detail page shows income/expense subtotals grouped by bucket group
 - Pattern builder UI — test a regex against live data, see match count, then save to a bucket
 - Manual quick-assign for individual unmatched transactions
 - Reusable CSV column mapping templates for repeat imports
 
 ### Cryptocurrency Cost Basis
 - Track multiple crypto assets (Bitcoin, Ethereum, etc.)
-- Record buys and sells manually or import via CSV (e.g., CashApp format)
+- Record buys and sells manually or import via the global CSV upload page
+- Multi-format CSV import with automatic detection: CashApp (creates separate buys/sells) and Coinbase gain/loss reports (creates fully-allocated buy+sell pairs with cost basis pre-calculated)
+- Auto-detects asset symbol from CSV data and pre-selects the matching crypto asset, with option to create new assets inline during import
+- Smart header scanning — handles CSVs with disclaimer preambles and metadata rows
 - Specific identification method — manually select which buys each sell draws from
 - Fees tracked on both buys and sells, factored into cost basis and proceeds
 - Auto-calculates gain/loss and long-term vs short-term per allocation
 - Tax reporting by year with IRS form field references (1099-DA Box 1f / 1g)
 - Unallocated sell queue for retroactive cost basis assignment after bulk CSV import
+- Balance sheet cross-referencing — shows balance sheet holdings alongside tracked holdings with discrepancy warnings when transactions are missing
 
 ### Corporate Balance Sheet
 - Track corporate assets (crypto, stocks, cash, other) per tax year
-- Enter quantities and December 31 year-end prices
-- Crypto items link to the crypto module — shows tracked buy/sell activity as hints
-- Copy balance sheet from previous year with auto-suggested adjustments based on verified crypto activity
-- Inline editing for quantity, price, and notes
+- Automatic Dec 31 price fetching via CryptoCompare (crypto) and Alpha Vantage (stocks)
+- Crypto items link to the crypto module for cross-referencing
+- Copy balance sheet from previous year with auto-suggested adjustments based on verified crypto buys and sells
+- Inline editing for quantity, price, ticker symbol, and notes
+- Three independent views (transaction activity, crypto assets, balance sheet) serve as separate sources of truth — data is never merged or double-counted between them
 
 ### Artisan Commands
 - `taxyear:create {year}` — create a new tax year
@@ -52,16 +94,16 @@ Start the Docker environment:
 docker compose up -d
 ```
 
-Run migrations:
+Run migrations and seed default data:
 
 ```bash
-docker compose exec app php artisan migrate
+docker compose exec app php artisan migrate --seed
 ```
 
 Build frontend assets (run from host machine):
 
 ```bash
-cd laravel && npm install && npm run build
+cd laravel && npm install && npm run build && cd ..
 ```
 
 Access the app at `http://localhost:8010`.
@@ -80,9 +122,18 @@ DB_DATABASE=eztaxes
 DB_USERNAME=eztaxes
 DB_PASSWORD=secret
 SESSION_DRIVER=file
+ALPHAVANTAGE_API_KEY=your_key_here
 ```
 
 From the host machine, the database is accessible on port `3446` (mapped to avoid conflicts with other projects).
+
+### Seeded Data
+
+The `--seed` flag runs the DatabaseSeeder which creates:
+- Default bucket groups (Client Income, Operating Expenses, Payroll, Assets, Ignored)
+- Built-in CSV templates for Gusto Employee Payroll, Gusto US Contractors, Gusto International Contractors, CashApp Crypto, and Coinbase Gain/Loss
+
+The seeders are idempotent and safe to re-run.
 
 ### PHP dependencies
 
@@ -94,19 +145,6 @@ Install all required dependencies on Ubuntu/Debian:
 sudo apt install php8.5-cli php8.5-common php8.5-curl php8.5-mbstring php8.5-xml php8.5-bcmath php8.5-zip php8.5-mysql php8.5-fpm unzip -y
 ```
 
-| Package | Extensions provided |
-|---------|-------------------|
-| php8.5-cli | PHP command-line interpreter |
-| php8.5-common | Ctype, Fileinfo, Filter, Hash, OpenSSL, PCRE, PDO, Session, Tokenizer |
-| php8.5-curl | cURL |
-| php8.5-mbstring | Mbstring |
-| php8.5-xml | DOM, XML, XMLReader, XMLWriter |
-| php8.5-bcmath | BCMath (arbitrary precision math) |
-| php8.5-zip | Zip archive support (used by Composer) |
-| php8.5-mysql | PDO_MySQL, MySQLi |
-| php8.5-fpm | FastCGI Process Manager (for Nginx) |
-| unzip | Required by Composer for package extraction |
-
 ### Composer
 
 Composer 2.9.5+ is required. Older versions have a known incompatibility with PHP 8.5 (`stream_context_create()` error in `RemoteFilesystem`). Upgrade with:
@@ -115,32 +153,15 @@ Composer 2.9.5+ is required. Older versions have a known incompatibility with PH
 composer self-update
 ```
 
-If self-update fails, do a fresh install:
-
-```bash
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php
-php -r "unlink('composer-setup.php');"
-sudo mv composer.phar /usr/local/bin/composer
-```
-
 ### Tailwind CSS
 
 Tailwind is compiled via Vite. No dev server needed — just build on the host:
 
 ```bash
-cd laravel && npm run build
+cd laravel && npm run build && cd ..
 ```
 
 Re-run `npm run build` after modifying CSS or Blade templates.
-
-### Migrations
-
-The default Laravel migrations (users, password_reset_tokens, sessions, cache, jobs) have been removed. This project uses a custom schema with file-based sessions (`SESSION_DRIVER=file`).
-
-```bash
-docker compose exec app php artisan migrate
-```
 
 ## Docker Environment
 
