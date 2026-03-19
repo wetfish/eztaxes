@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             DefaultBucketGroupsSeeder::class,
+            DefaultCsvTemplatesSeeder::class,
         ]);
     }
 }

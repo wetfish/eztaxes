@@ -38,4 +38,14 @@ class TaxYear extends Model
     {
         return $this->hasMany(BalanceSheetItem::class);
     }
+
+    public function payrollImports(): HasMany
+    {
+        return $this->hasMany(PayrollImport::class);
+    }
+
+    public function payrollEntries(): HasMany
+    {
+        return $this->hasMany(PayrollEntry::class);
+    }
 }

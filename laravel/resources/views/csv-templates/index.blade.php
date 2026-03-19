@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'CSV Templates - eztaxes')
+@section('title', 'CSV Templates - EzTaxes')
 
 @section('content')
     <div class="flex items-center justify-between mb-8">
@@ -18,18 +18,25 @@
                 <div class="bg-white border border-stone-200 rounded-lg p-5">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="font-bold">{{ $template->name }}</h2>
-                            <div class="text-sm text-stone-500 mt-1">
-                                @foreach($template->column_mapping as $field => $index)
-                                    <span class="inline-block mr-3">{{ ucfirst($field) }}: column {{ $index }}</span>
-                                @endforeach
+                            <div class="flex items-center gap-2">
+                                <h2 class="font-bold">{{ $template->name }}</h2>
+                                @if($template->is_seeded)
+                                    <span class="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded">Built-in</span>
+                                @endif
                             </div>
+                            @if($template->detection_headers)
+                                <p class="text-xs text-stone-400 mt-1">
+                                    Auto-detects: {{ implode(', ', $template->detection_headers) }}
+                                </p>
+                            @endif
                         </div>
-                        <form action="{{ url('/csv-templates/' . $template->id) }}" method="POST" onsubmit="return confirm('Delete this template?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-500 hover:text-red-700 text-xs">Delete</button>
-                        </form>
+                        @if(!$template->is_seeded)
+                            <form action="{{ url('/csv-templates/' . $template->id) }}" method="POST" onsubmit="return confirm('Delete this template?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             @endforeach

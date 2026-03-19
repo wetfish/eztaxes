@@ -6,6 +6,7 @@ use App\Http\Controllers\CryptoController;
 use App\Http\Controllers\CsvTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\TaxYearController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
@@ -22,11 +23,14 @@ Route::get('/tax-years/{year}/transactions', [TransactionController::class, 'ind
 Route::post('/transactions/{id}/assign-bucket', [TransactionController::class, 'assignBucket']);
 Route::post('/transactions/create-pattern', [TransactionController::class, 'createPattern']);
 
-// CSV Imports
-Route::get('/tax-years/{year}/import', [ImportController::class, 'create']);
-Route::post('/tax-years/{year}/import', [ImportController::class, 'upload']);
-Route::post('/tax-years/{year}/import/process', [ImportController::class, 'process']);
+// CSV Imports (global)
+Route::get('/import', [ImportController::class, 'create']);
+Route::post('/import', [ImportController::class, 'upload']);
+Route::post('/import/process', [ImportController::class, 'process']);
 Route::delete('/imports/{id}', [ImportController::class, 'destroy']);
+
+// Legacy import route — redirect to global
+Route::get('/tax-years/{year}/import', [ImportController::class, 'createLegacy']);
 
 // Balance Sheet
 Route::get('/tax-years/{year}/balance-sheet', [BalanceSheetController::class, 'index']);
@@ -54,6 +58,12 @@ Route::delete('/patterns/{id}', [BucketController::class, 'deletePattern']);
 // CSV Templates
 Route::get('/csv-templates', [CsvTemplateController::class, 'index']);
 Route::delete('/csv-templates/{id}', [CsvTemplateController::class, 'destroy']);
+
+// Payroll
+Route::get('/payroll', [PayrollController::class, 'index']);
+Route::get('/payroll/{year}', [PayrollController::class, 'show']);
+Route::post('/payroll/{year}/toggle-officer', [PayrollController::class, 'toggleOfficer']);
+Route::delete('/payroll/imports/{id}', [PayrollController::class, 'destroyImport']);
 
 // Crypto
 Route::get('/crypto', [CryptoController::class, 'index']);

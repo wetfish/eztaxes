@@ -15,9 +15,11 @@
             <a href="{{ url('/') }}" class="text-lg font-bold tracking-tight">EzTaxes</a>
             <div class="flex items-center gap-6 text-sm">
                 <a href="{{ url('/') }}" class="hover:text-white transition-colors {{ request()->is('/') ? 'text-white' : 'text-stone-400' }}">Tax Years</a>
+                <a href="{{ url('/payroll') }}" class="hover:text-white transition-colors {{ request()->is('payroll*') ? 'text-white' : 'text-stone-400' }}">Payroll</a>
                 <a href="{{ url('/crypto') }}" class="hover:text-white transition-colors {{ request()->is('crypto*') ? 'text-white' : 'text-stone-400' }}">Crypto</a>
                 <a href="{{ url('/buckets') }}" class="hover:text-white transition-colors {{ request()->is('buckets*') ? 'text-white' : 'text-stone-400' }}">Buckets</a>
                 <a href="{{ url('/csv-templates') }}" class="hover:text-white transition-colors {{ request()->is('csv-templates*') ? 'text-white' : 'text-stone-400' }}">CSV Templates</a>
+                <a href="{{ url('/import') }}" class="ml-2 bg-stone-700 hover:bg-stone-600 text-white px-3 py-1.5 rounded transition-colors {{ request()->is('import*') ? 'bg-stone-600' : '' }}">Import CSV</a>
             </div>
         </div>
     </nav>
