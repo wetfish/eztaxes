@@ -27,11 +27,19 @@
     {{-- Demo Mode Banner --}}
     @if(config('demo.enabled'))
         <div class="bg-amber-500 text-white text-center text-sm font-medium py-2 px-4">
-            ⚠️ Demo Mode &mdash; This data is fictional and for demonstration purposes only. Do not use for financial decisions.
+            ⚠️ Demo Mode &mdash; This is fictional data for demonstration only. All forms are read-only. <a href="https://github.com/yourusername/eztaxes" class="underline font-bold hover:text-amber-100">Download EzTaxes</a> to use with your own data.
         </div>
     @endif
 
     {{-- Flash Messages --}}
+    @if(session('demo_blocked'))
+        <div class="max-w-6xl mx-auto px-6 mt-4">
+            <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded">
+                {{ session('demo_blocked') }}
+            </div>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="max-w-6xl mx-auto px-6 mt-4">
             <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded">
