@@ -1,5 +1,39 @@
 # EzTaxes
-S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Track your corporate crypto treasury and stock assets. Features an auto-detecting CSV upload page with built-in templates for six supported formats from Gusto, Coinbase, and CashApp - PLUS the ability to upload your own banking records and categorize transactions with regex pattern matching.
+
+A Laravel 12 S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Features a single auto-detecting CSV upload page with built-in templates for all six supported formats, and the ability to upload your own banking records and categorize transactions with regex pattern matching.
+
+**[Live Demo](https://eztaxes.wetfish.net)** — try it with fictional data (read-only)
+
+## Screenshots
+
+### Tax Year Dashboard
+Track multiple tax years with income, expenses, and net totals at a glance. Filed years are marked green, drafts in yellow.
+
+![Tax Years Dashboard](docs/screenshots/01-tax-years.png)
+
+### Transaction Categorization
+Upload bank CSVs and categorize transactions using regex pattern matching. Bucket groups organize categories by type — Client Income, Operating Expenses, and Ignored transactions are tracked separately.
+
+![Tax Year Detail with Bucket Breakdown](docs/screenshots/02-tax-year-detail.png)
+
+### Payroll with 1120-S Tax Lines
+Import Gusto payroll data with automatic officer/employee splitting for IRS form lines. Summary cards map directly to 1120-S Lines 7, 8, 12, and 19.
+
+![Payroll Summary](docs/screenshots/03-payroll-summary.png)
+
+Track US and international contractors with import history showing which Gusto CSV files have been loaded.
+
+![Payroll Contractors and Import History](docs/screenshots/04-payroll-contractors.png)
+
+### Crypto Cost Basis Tracking
+Full buy/sell tracking with specific identification, long-term vs short-term classification, and IRS form references. Balance sheet cross-referencing flags discrepancies automatically.
+
+![Crypto Asset Detail](docs/screenshots/05-crypto-detail.png)
+
+### Corporate Balance Sheet
+Track crypto, stocks, and cash holdings per tax year. Fetch December 31 prices automatically via CryptoCompare and Alpha Vantage APIs. Crypto holdings cross-reference with the crypto module.
+
+![Balance Sheet](docs/screenshots/06-balance-sheet.png)
 
 ## Integrations
 
