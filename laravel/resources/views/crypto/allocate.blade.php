@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Allocate Sell - ' . $asset->symbol . ' - eztaxes')
+@section('title', 'Allocate Sell - ' . $asset->symbol . ' - EzTaxes')
 
 @section('content')
     <div class="mb-8">
@@ -11,7 +11,7 @@
     {{-- Sell Details --}}
     <div class="bg-white border border-stone-200 rounded-lg p-5 mb-6">
         <h2 class="font-medium mb-3">Sell Transaction</h2>
-        <div class="grid grid-cols-4 gap-4 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
                 <div class="text-xs text-stone-500">Date</div>
                 <div class="font-medium">{{ $sell->date->format('m/d/Y') }}</div>
@@ -57,9 +57,9 @@
             @if($availableBuys->isEmpty())
                 <div class="text-stone-400 text-sm">No buys with remaining quantity available.</div>
             @else
-                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
+                <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
                     <div class="max-h-64 overflow-y-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-sm whitespace-nowrap">
                             <thead class="bg-stone-100 text-left sticky top-0 z-10">
                                 <tr>
                                     <th class="px-4 py-3 font-medium">Buy Date</th>

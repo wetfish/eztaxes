@@ -3,18 +3,18 @@
 @section('title', 'Buckets - EzTaxes')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 class="text-2xl font-bold">Buckets</h1>
     </div>
 
     {{-- Create Forms --}}
-    <div class="grid grid-cols-2 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         {{-- Create Group --}}
         <div class="bg-white border border-stone-200 rounded-lg p-5">
             <h2 class="font-medium mb-3">Create Group</h2>
-            <form action="{{ url('/bucket-groups') }}" method="POST" class="flex items-end gap-3">
+            <form action="{{ url('/bucket-groups') }}" method="POST" class="grid grid-cols-1 sm:flex sm:items-end gap-3">
                 @csrf
-                <div class="flex-1">
+                <div class="sm:flex-1">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Group Name</label>
                     <input type="text" name="name" required placeholder="e.g. Client Income" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>
@@ -27,9 +27,9 @@
         {{-- Create Bucket --}}
         <div class="bg-white border border-stone-200 rounded-lg p-5">
             <h2 class="font-medium mb-3">Create Bucket</h2>
-            <form action="{{ url('/buckets') }}" method="POST" class="flex items-end gap-3">
+            <form action="{{ url('/buckets') }}" method="POST" class="grid grid-cols-1 sm:flex sm:items-end gap-3">
                 @csrf
-                <div class="flex-1">
+                <div class="sm:flex-1">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Bucket Name</label>
                     <input type="text" name="name" required placeholder="e.g. Office Supplies" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>

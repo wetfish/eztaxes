@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Copy Balance Sheet - ' . $taxYear->year . ' - eztaxes')
+@section('title', 'Copy Balance Sheet - ' . $taxYear->year . ' - EzTaxes')
 
 @section('content')
     <div class="mb-8">
@@ -100,21 +100,21 @@
                     @endif
 
                     {{-- Editable fields for the new year --}}
-                    <div class="flex items-end gap-3 flex-wrap">
+                    <div class="grid grid-cols-1 sm:flex sm:items-end gap-3 sm:flex-wrap">
                         @if(in_array($item['asset_type'], ['crypto', 'stock']))
                             <div>
                                 <label class="block text-xs font-medium text-stone-500 mb-1">{{ $taxYear->year }} Quantity</label>
                                 <input type="text" name="items[{{ $index }}][quantity]"
                                     value="{{ $item['suggested_quantity'] ? rtrim(rtrim(number_format($item['suggested_quantity'], 8), '0'), '.') : '' }}"
                                     placeholder="0.00"
-                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
+                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-44 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-stone-500 mb-1">Dec 31, {{ $taxYear->year }} Price ($)</label>
                                 <input type="text" name="items[{{ $index }}][unit_price_year_end]"
                                     value=""
                                     placeholder="Enter new price"
-                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-44 focus:outline-none focus:ring-2 focus:ring-stone-400">
                             </div>
                         @else
                             <div>
@@ -122,10 +122,10 @@
                                 <input type="text" name="items[{{ $index }}][total_value]"
                                     value=""
                                     placeholder="Enter new value"
-                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                                    class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-44 focus:outline-none focus:ring-2 focus:ring-stone-400">
                             </div>
                         @endif
-                        <div class="flex-1">
+                        <div class="sm:flex-1">
                             <label class="block text-xs font-medium text-stone-500 mb-1">Notes</label>
                             <input type="text" name="items[{{ $index }}][notes]"
                                 value="{{ $item['notes'] }}"

@@ -3,7 +3,7 @@
 @section('title', $taxYear->year . ' - EzTaxes')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
             <h1 class="text-2xl font-bold">Tax Year {{ $taxYear->year }}</h1>
             <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded
@@ -16,14 +16,14 @@
             <a href="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet') }}" class="bg-white border border-stone-300 text-stone-700 px-4 py-2 rounded text-sm hover:bg-stone-50 transition-colors">
                 Balance Sheet
             </a>
-            <a href="{{ url('/tax-years/' . $taxYear->year . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+            <a href="{{ url('/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
                 Import CSV
             </a>
         </div>
     </div>
 
     {{-- Grand Totals (from cached transaction data) --}}
-    <div class="grid grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div class="bg-white border border-stone-200 rounded-lg p-4">
             <div class="text-sm text-stone-500">Total Income</div>
             <div class="text-xl font-bold text-emerald-600">${{ number_format($taxYear->total_income, 2) }}</div>
@@ -59,8 +59,8 @@
                     </div>
                 </div>
 
-                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
+                <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
+                    <table class="w-full text-sm whitespace-nowrap">
                         <thead class="bg-stone-100 text-left">
                             <tr>
                                 <th class="px-4 py-3 font-medium">Bucket</th>
@@ -97,7 +97,7 @@
                                 </tr>
                                 <tr id="{{ $bucketId }}" class="hidden">
                                     <td colspan="4" class="px-0 py-0">
-                                        <table class="w-full text-sm">
+                                        <table class="w-full text-sm whitespace-nowrap">
                                             <tbody>
                                                 @foreach($bucket->transactions->sortBy('date') as $transaction)
                                                     <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
@@ -129,8 +129,8 @@
                     </div>
                 </div>
 
-                <div class="bg-white border border-amber-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
+                <div class="bg-white border border-amber-200 rounded-lg overflow-x-auto">
+                    <table class="w-full text-sm whitespace-nowrap">
                         <thead class="bg-amber-50 text-left">
                             <tr>
                                 <th class="px-4 py-3 font-medium">Bucket</th>
@@ -167,7 +167,7 @@
                                 </tr>
                                 <tr id="{{ $bucketId }}" class="hidden">
                                     <td colspan="4" class="px-0 py-0">
-                                        <table class="w-full text-sm">
+                                        <table class="w-full text-sm whitespace-nowrap">
                                             <tbody>
                                                 @foreach($bucket->transactions->sortBy('date') as $transaction)
                                                     <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
@@ -204,8 +204,8 @@
     @if($imports->isEmpty())
         <div class="text-stone-400 text-sm">No imports yet. Upload a CSV to get started.</div>
     @else
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
-            <table class="w-full text-sm">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">File</th>

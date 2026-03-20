@@ -5,9 +5,9 @@
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/crypto') }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to Crypto</a>
-        <div class="flex items-center justify-between mt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2">
             <h1 class="text-2xl font-bold">{{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
-            <a href="{{ url('/crypto/' . $asset->id . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+            <a href="{{ url('/crypto/' . $asset->id . '/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors text-center">
                 Import CSV
             </a>
         </div>
@@ -28,7 +28,7 @@
     @endif
 
     {{-- Summary --}}
-    <div class="grid {{ $balanceSheetQuantity !== null ? 'grid-cols-4' : 'grid-cols-3' }} gap-4 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 {{ $balanceSheetQuantity !== null ? 'md:grid-cols-4' : 'md:grid-cols-3' }} gap-4 mb-4">
         @if($balanceSheetQuantity !== null)
             <div class="bg-white border border-stone-200 rounded-lg p-4">
                 <div class="text-sm text-stone-500">Balance Sheet Holdings <span class="text-stone-300">({{ $balanceSheetYear }})</span></div>
@@ -62,7 +62,7 @@
         <h2 class="text-lg font-bold mb-4">Tax Reporting by Year</h2>
         <div class="grid gap-4 mb-8">
             @foreach($taxYearSummaries as $summary)
-                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
+                <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
                     <div class="bg-stone-100 px-4 py-3 flex items-center justify-between">
                         <h3 class="font-bold">{{ $summary['year'] }}</h3>
                         <span class="text-xs text-stone-500">{{ $summary['sell_count'] }} sell{{ $summary['sell_count'] !== 1 ? 's' : '' }}</span>
@@ -72,7 +72,7 @@
                         @if($summary['short_term_proceeds'] > 0)
                             <div class="mb-4">
                                 <div class="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Short-Term (held ≤ 1 year)</div>
-                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                                     <div>
                                         <div class="text-xs text-stone-400">Total Proceeds <span class="text-stone-300">(1099-DA Box 1f)</span></div>
                                         <div class="font-medium">${{ number_format($summary['short_term_proceeds'], 2) }}</div>
@@ -95,7 +95,7 @@
                         @if($summary['long_term_proceeds'] > 0)
                             <div class="mb-4">
                                 <div class="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">Long-Term (held > 1 year)</div>
-                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                                     <div>
                                         <div class="text-xs text-stone-400">Total Proceeds <span class="text-stone-300">(1099-DA Box 1f)</span></div>
                                         <div class="font-medium">${{ number_format($summary['long_term_proceeds'], 2) }}</div>
@@ -116,7 +116,7 @@
 
                         {{-- Combined total --}}
                         <div class="border-t border-stone-100 pt-3">
-                            <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                                 <div>
                                     <div class="text-xs text-stone-400">Combined Proceeds</div>
                                     <div class="font-bold">${{ number_format($summary['total_proceeds'], 2) }}</div>
@@ -152,8 +152,8 @@
     @if($sells->isEmpty())
         <div class="text-stone-400 text-sm mb-8">No sells recorded yet.</div>
     @else
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
-            <table class="w-full text-sm">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto mb-8">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">Date</th>
@@ -209,7 +209,7 @@
                         @if($isAllocated)
                             <tr id="sell-{{ $sell->id }}" class="hidden">
                                 <td colspan="9" class="px-0 py-0">
-                                    <table class="w-full text-sm">
+                                    <table class="w-full text-sm whitespace-nowrap">
                                         <tbody>
                                             @foreach($sell->buys as $buy)
                                                 <tr class="{{ $loop->index % 2 === 0 ? 'bg-stone-50' : 'bg-white' }}">
@@ -242,7 +242,7 @@
 
     {{-- Add Buy --}}
     <div class="bg-white border border-stone-200 rounded-lg p-5 mb-4">
-        <form action="{{ url('/crypto/' . $asset->id . '/buys') }}" method="POST" class="flex items-end gap-3 flex-wrap">
+        <form action="{{ url('/crypto/' . $asset->id . '/buys') }}" method="POST" class="grid grid-cols-1 sm:flex sm:items-end gap-3 sm:flex-wrap">
             @csrf
             @if($errors->any())
                 <div class="w-full mb-2">
@@ -253,25 +253,25 @@
             @endif
             <div>
                 <label class="block text-xs font-medium text-stone-500 mb-1">Date</label>
-                <input type="date" name="date" required value="{{ old('date') }}" class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400">
+                <input type="date" name="date" required value="{{ old('date') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-stone-500 mb-1">Quantity</label>
-                <input type="text" name="quantity" required placeholder="0.00000000" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
+                <input type="text" name="quantity" required placeholder="0.00000000" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
             </div>
             <div>
                 <label class="block text-xs font-medium text-stone-500 mb-1">Cost per unit ($)</label>
-                <input type="text" name="cost_per_unit" required placeholder="0.00" value="{{ old('cost_per_unit') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                <input type="text" name="cost_per_unit" required placeholder="0.00" value="{{ old('cost_per_unit') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-stone-500 mb-1">Fee ($)</label>
-                <input type="text" name="fee" placeholder="0.00" value="{{ old('fee') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                <input type="text" name="fee" placeholder="0.00" value="{{ old('fee') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-28 focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
-            <div class="flex-1">
+            <div class="sm:flex-1">
                 <label class="block text-xs font-medium text-stone-500 mb-1">Notes (optional)</label>
                 <input type="text" name="notes" placeholder="e.g. Coinbase purchase" value="{{ old('notes') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
-            <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+            <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors w-full sm:w-auto">
                 Add Buy
             </button>
         </form>
@@ -280,8 +280,8 @@
     @if($buys->isEmpty())
         <div class="text-stone-400 text-sm mb-8">No buys recorded yet.</div>
     @else
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
-            <table class="w-full text-sm">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto mb-8">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">Date</th>

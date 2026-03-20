@@ -8,7 +8,7 @@
         <h1 class="text-2xl font-bold mt-2">Import CSV — {{ $asset->name }} <span class="text-stone-400 font-normal">{{ $asset->symbol }}</span></h1>
     </div>
 
-    <div class="grid grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         <div class="bg-white border border-stone-200 rounded-lg p-5">
             <h3 class="font-medium mb-2">CashApp Format</h3>
             <p class="text-sm text-stone-500 mb-2">

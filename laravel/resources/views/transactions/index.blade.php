@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Transactions - ' . $taxYear->year . ' - eztaxes')
+@section('title', 'Transactions - ' . $taxYear->year . ' - EzTaxes')
 
 @section('content')
     <div class="mb-8">
@@ -13,11 +13,11 @@
         <h2 class="font-medium mb-3">Pattern Builder</h2>
 
         {{-- Test pattern --}}
-        <form method="GET" action="{{ url('/tax-years/' . $taxYear->year . '/transactions') }}" class="flex items-end gap-3 mb-3" id="pattern-test-form">
+        <form method="GET" action="{{ url('/tax-years/' . $taxYear->year . '/transactions') }}" class="grid grid-cols-1 sm:flex sm:items-end gap-3 mb-3" id="pattern-test-form">
             @if($filter)
                 <input type="hidden" name="filter" value="{{ $filter }}">
             @endif
-            <div class="flex-1">
+            <div class="sm:flex-1">
                 <label class="block text-xs font-medium text-stone-500 mb-1">Test regex pattern</label>
                 <input
                     type="text"
@@ -40,7 +40,7 @@
 
         {{-- Pattern match results and save --}}
         @if($testPattern)
-            <div class="flex items-center justify-between border-t border-stone-100 pt-3">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-t border-stone-100 pt-3 gap-3">
                 <div class="text-sm">
                     @if($patternMatchCount !== null)
                         <span class="font-medium {{ $patternMatchCount > 0 ? 'text-emerald-600' : 'text-amber-600' }}">
@@ -73,7 +73,7 @@
     </div>
 
     {{-- Filters --}}
-    <div class="flex items-center gap-3 mb-6">
+    <div class="flex flex-wrap items-center gap-3 mb-6">
         <a href="{{ url('/tax-years/' . $taxYear->year . '/transactions') }}"
            class="text-sm px-3 py-1 rounded {{ !$filter ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200' }}">
             All ({{ $counts['total'] }})
@@ -100,9 +100,9 @@
         <div class="grid gap-3">
             @foreach($transactions as $transaction)
                 <div class="bg-white border border-stone-200 rounded-lg">
-                    <div class="flex items-center justify-between px-4 py-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 gap-2">
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-3 mb-1">
+                            <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
                                 <span class="text-sm text-stone-500 whitespace-nowrap">{{ $transaction->date->format('m/d/Y') }}</span>
                                 <span class="text-sm font-medium whitespace-nowrap {{ $transaction->amount > 0 ? 'text-emerald-600' : 'text-red-600' }}">
                                     ${{ number_format(abs($transaction->amount), 2) }}
@@ -146,7 +146,7 @@
                                 Quick assign to bucket...
                             </summary>
                             <div class="px-4 pb-3 pt-1">
-                                <form action="{{ url('/transactions/' . $transaction->id . '/assign-bucket') }}" method="POST" class="flex items-center gap-3">
+                                <form action="{{ url('/transactions/' . $transaction->id . '/assign-bucket') }}" method="POST" class="flex flex-col sm:flex-row sm:items-center gap-3">
                                     @csrf
                                     <select name="bucket_id" required class="border border-stone-300 rounded px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-stone-400">
                                         <option value="">Select bucket...</option>

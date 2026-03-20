@@ -5,8 +5,8 @@
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/tax-years/' . $taxYear->year) }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to {{ $taxYear->year }}</a>
-        <div class="flex items-center justify-between mt-2">
-            <h1 class="text-2xl font-bold">Balance Sheet — December 31, {{ $taxYear->year }}</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2">
+            <h1 class="text-2xl font-bold">Balance Sheet —<br class="sm:hidden"> December 31, {{ $taxYear->year }}</h1>
             <div class="flex items-center gap-3">
                 @if($items->whereIn('asset_type', ['crypto', 'stock'])->isNotEmpty())
                     <form action="{{ url('/tax-years/' . $taxYear->year . '/balance-sheet/fetch-prices') }}" method="POST" onsubmit="this.querySelector('button').innerHTML='Fetching prices&hellip; <span class=\'text-xs font-normal\'>stocks may take a minute</span>'; this.querySelector('button').disabled=true;">
@@ -43,10 +43,10 @@
                     @endforeach
                 </div>
             @endif
-            <div class="flex items-end gap-3 flex-wrap">
+            <div class="grid grid-cols-1 sm:flex sm:items-end gap-3 sm:flex-wrap">
                 <div>
                     <label class="block text-xs font-medium text-stone-500 mb-1">Type</label>
-                    <select name="asset_type" id="asset-type-select" required class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    <select name="asset_type" id="asset-type-select" required class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-stone-400">
                         <option value="crypto">Crypto</option>
                         <option value="stock">Stock</option>
                         <option value="cash">Cash</option>
@@ -55,34 +55,34 @@
                 </div>
                 <div id="crypto-asset-field">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Crypto Asset</label>
-                    <select name="crypto_asset_id" class="border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    <select name="crypto_asset_id" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-stone-400">
                         <option value="">Select...</option>
                         @foreach($cryptoAssets as $asset)
                             <option value="{{ $asset->id }}">{{ $asset->name }} ({{ $asset->symbol }})</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="flex-1">
+                <div class="sm:flex-1">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Label</label>
                     <input type="text" name="label" required placeholder="e.g. Bitcoin, Business Checking" value="{{ old('label') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>
                 <div id="ticker-symbol-field" class="hidden">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Ticker</label>
-                    <input type="text" name="ticker_symbol" placeholder="e.g. RBLX" value="{{ old('ticker_symbol') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-stone-400 uppercase">
+                    <input type="text" name="ticker_symbol" placeholder="e.g. RBLX" value="{{ old('ticker_symbol') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-24 focus:outline-none focus:ring-2 focus:ring-stone-400 uppercase">
                 </div>
                 <div id="quantity-field">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Quantity</label>
-                    <input type="text" name="quantity" placeholder="0.00" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
+                    <input type="text" name="quantity" placeholder="0.00" value="{{ old('quantity') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-36 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono">
                 </div>
                 <div id="unit-price-field">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Dec 31 Price ($)</label>
-                    <input type="text" name="unit_price_year_end" placeholder="0.00" value="{{ old('unit_price_year_end') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    <input type="text" name="unit_price_year_end" placeholder="0.00" value="{{ old('unit_price_year_end') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>
                 <div id="total-value-field" class="hidden">
                     <label class="block text-xs font-medium text-stone-500 mb-1">Total Value ($)</label>
-                    <input type="text" name="total_value" placeholder="0.00" value="{{ old('total_value') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    <input type="text" name="total_value" placeholder="0.00" value="{{ old('total_value') }}" class="border border-stone-300 rounded px-3 py-2 text-sm w-full sm:w-36 focus:outline-none focus:ring-2 focus:ring-stone-400">
                 </div>
-                <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+                <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors w-full sm:w-auto">
                     Add
                 </button>
             </div>
@@ -95,8 +95,8 @@
             <p class="text-lg">No assets on this balance sheet yet.</p>
         </div>
     @else
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
-            <table class="w-full text-sm">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">Asset</th>

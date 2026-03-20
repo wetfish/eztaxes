@@ -1,6 +1,6 @@
 <div class="bg-white border {{ $currentGroupId ? 'border-stone-200' : 'border-amber-200' }} rounded-lg p-5">
-    <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-3">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
             <h3 class="font-bold">{{ $bucket->name }}</h3>
             <span class="text-xs text-stone-400">{{ $bucket->slug }}</span>
             @if($bucket->behavior !== 'normal')

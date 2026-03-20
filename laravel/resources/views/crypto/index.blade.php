@@ -3,24 +3,24 @@
 @section('title', 'Crypto - EzTaxes')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 class="text-2xl font-bold">Crypto Assets</h1>
     </div>
 
     {{-- Add Asset --}}
     <div class="bg-white border border-stone-200 rounded-lg p-5 mb-8">
         <h2 class="font-medium mb-3">Add Asset</h2>
-        <form action="{{ url('/crypto') }}" method="POST" class="flex items-end gap-3">
+        <form action="{{ url('/crypto') }}" method="POST" class="grid grid-cols-1 sm:flex sm:items-end gap-3">
             @csrf
-            <div class="flex-1">
+            <div class="sm:flex-1">
                 <label class="block text-xs font-medium text-stone-500 mb-1">Name</label>
                 <input type="text" name="name" required placeholder="e.g. Bitcoin" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400">
             </div>
-            <div class="w-32">
+            <div class="sm:w-32">
                 <label class="block text-xs font-medium text-stone-500 mb-1">Symbol</label>
                 <input type="text" name="symbol" required placeholder="e.g. BTC" class="border border-stone-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-stone-400 uppercase">
             </div>
-            <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+            <button type="submit" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors w-full sm:w-auto">
                 Add
             </button>
         </form>
@@ -32,8 +32,8 @@
             <p class="text-sm mt-2">Add one above to start tracking buys and sells.</p>
         </div>
     @else
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
-            <table class="w-full text-sm">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-3 font-medium">Asset</th>

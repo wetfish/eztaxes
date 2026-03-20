@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sell ' . $asset->symbol . ' - Crypto - eztaxes')
+@section('title', 'Sell ' . $asset->symbol . ' - Crypto - EzTaxes')
 
 @section('content')
     <div class="mb-8">
@@ -59,9 +59,9 @@
             @if($availableBuys->isEmpty())
                 <div class="text-stone-400 text-sm">No buys with remaining quantity available.</div>
             @else
-                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
+                <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
                     <div class="max-h-64 overflow-y-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-sm whitespace-nowrap">
                             <thead class="bg-stone-100 text-left sticky top-0 z-10">
                                 <tr>
                                     <th class="px-4 py-3 font-medium">Buy Date</th>

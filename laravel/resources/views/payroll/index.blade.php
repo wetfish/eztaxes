@@ -3,7 +3,7 @@
 @section('title', 'Payroll - EzTaxes')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 class="text-2xl font-bold">Payroll</h1>
     </div>
 

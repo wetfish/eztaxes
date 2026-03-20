@@ -5,16 +5,16 @@
 @section('content')
     <div class="mb-8">
         <a href="{{ url('/payroll') }}" class="text-sm text-stone-500 hover:text-stone-700">&larr; Back to Payroll</a>
-        <div class="flex items-center justify-between mt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2">
             <h1 class="text-2xl font-bold">{{ $taxYear->year }} Payroll</h1>
-            <a href="{{ url('/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors">
+            <a href="{{ url('/import') }}" class="bg-stone-800 text-white px-4 py-2 rounded text-sm hover:bg-stone-700 transition-colors text-center">
                 Import CSV
             </a>
         </div>
     </div>
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white border border-stone-200 rounded-lg p-4">
             <p class="text-xs text-stone-500 uppercase tracking-wide">Officer Compensation</p>
             <p class="text-xl font-bold mt-1">${{ number_format($summary['officer_gross'], 2) }}</p>
@@ -78,14 +78,14 @@
 
     {{-- Employee Payroll Section --}}
     @if($employeesByName->isNotEmpty())
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto mb-8">
             <div class="px-5 py-4 bg-stone-50 border-b border-stone-200">
                 <h2 class="font-bold">Employee Payroll</h2>
                 <p class="text-xs text-stone-500 mt-0.5">{{ $employeeEntries->count() }} entries across {{ $employeesByName->count() }} employee(s)</p>
             </div>
 
             {{-- Per-employee summary with officer toggle --}}
-            <table class="w-full text-sm">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-2 font-medium">Employee</th>
@@ -141,7 +141,7 @@
                     Show all {{ $employeeEntries->count() }} individual entries
                 </summary>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full text-xs whitespace-nowrap">
                         <thead class="bg-stone-100 text-left">
                             <tr>
                                 <th class="px-4 py-2 font-medium">Date</th>
@@ -181,12 +181,12 @@
 
     {{-- US Contractors Section --}}
     @if($usContractors->isNotEmpty())
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto mb-8">
             <div class="px-5 py-4 bg-stone-50 border-b border-stone-200">
                 <h2 class="font-bold">US Contractors</h2>
                 <p class="text-xs text-stone-500 mt-0.5">{{ $usContractors->count() }} contractor(s) &mdash; requires 1099-NEC for each</p>
             </div>
-            <table class="w-full text-sm">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-2 font-medium">Contractor</th>
@@ -215,13 +215,13 @@
 
     {{-- International Contractors Section --}}
     @if($intlContractorsByName->isNotEmpty())
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto mb-8">
             <div class="px-5 py-4 bg-stone-50 border-b border-stone-200">
                 <h2 class="font-bold">International Contractors</h2>
                 <p class="text-xs text-stone-500 mt-0.5">{{ $intlContractorsByName->count() }} contractor(s) &mdash; no 1099-NEC required</p>
             </div>
 
-            <table class="w-full text-sm">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-2 font-medium">Contractor</th>
@@ -252,7 +252,7 @@
                     Show all {{ $intlContractorEntries->count() }} individual payments
                 </summary>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full text-xs whitespace-nowrap">
                         <thead class="bg-stone-100 text-left">
                             <tr>
                                 <th class="px-4 py-2 font-medium">Date</th>
@@ -293,11 +293,11 @@
 
     {{-- Import History --}}
     @if($imports->isNotEmpty())
-        <div class="bg-white border border-stone-200 rounded-lg overflow-hidden">
+        <div class="bg-white border border-stone-200 rounded-lg overflow-x-auto">
             <div class="px-5 py-4 bg-stone-50 border-b border-stone-200">
                 <h2 class="font-bold">Import History</h2>
             </div>
-            <table class="w-full text-sm">
+            <table class="w-full text-sm whitespace-nowrap">
                 <thead class="bg-stone-100 text-left">
                     <tr>
                         <th class="px-4 py-2 font-medium">File</th>

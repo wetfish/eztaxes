@@ -167,7 +167,7 @@
         <div class="bg-white border border-stone-200 rounded-lg overflow-hidden mb-6">
             <h2 class="font-medium px-4 py-3 bg-stone-50 border-b border-stone-200">Preview (first {{ count($preview) }} rows)</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-sm whitespace-nowrap">
                     <thead class="bg-stone-100 text-left">
                         <tr>
                             @foreach($headers as $header)

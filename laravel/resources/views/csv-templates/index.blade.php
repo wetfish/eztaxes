@@ -3,7 +3,7 @@
 @section('title', 'CSV Templates - EzTaxes')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 class="text-2xl font-bold">CSV Templates</h1>
     </div>
 
@@ -21,7 +21,7 @@
                             <div class="flex items-center gap-2">
                                 <h2 class="font-bold">{{ $template->name }}</h2>
                                 @if($template->is_seeded)
-                                    <span class="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded">Built-in</span>
+                                    <span class="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded whitespace-nowrap shrink-0">Built-in</span>
                                 @endif
                             </div>
                             @if($template->detection_headers)
