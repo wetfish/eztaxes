@@ -27,7 +27,7 @@
     {{-- Demo Mode Banner --}}
     @if(config('demo.enabled'))
         <div class="bg-amber-500 text-white text-center text-sm font-medium py-2 px-4">
-            ⚠️ Demo Mode &mdash; This is fictional data for demonstration only. All forms are read-only. <a href="https://github.com/yourusername/eztaxes" class="underline font-bold hover:text-amber-100">Download EzTaxes</a> to use with your own data.
+            ⚠️ Demo Mode &mdash; This is fictional data for demonstration only. All forms are read-only. <a href="https://github.com/wetfish/eztaxes" class="underline font-bold hover:text-amber-100">Download EzTaxes</a> to use with your own data.
         </div>
     @endif
 
