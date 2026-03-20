@@ -1,6 +1,6 @@
 # EzTaxes
 
-A Laravel 12 S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Features a single auto-detecting CSV upload page with built-in templates for all six supported formats, and the ability to upload your own banking records and categorize transactions with regex pattern matching.
+S-Corp tax management dashboard with built-in integrations for **Gusto**, **Coinbase**, **CashApp**, and automatic price lookups via **CryptoCompare** and **Alpha Vantage**. Track your corporate crypto treasury and stock assets. Features an auto-detecting CSV upload page with built-in templates for six supported formats from Gusto, Coinbase, and CashApp - PLUS the ability to upload your own banking records and categorize transactions with regex pattern matching.
 
 **[Live Demo](https://eztaxes.wetfish.net)** — try it with fictional data (read-only)
 
