@@ -115,11 +115,11 @@ Built-in templates are seeded on setup for all six supported formats. The confir
 - **Framework:** Laravel 12.12.1 (released March 10, 2026; Laravel 12 initially released February 24, 2025)
 - **PHP:** 8.5 (Laravel 12 requires 8.2+; PHP 8.5 compatibility added in Laravel 12.8+)
 - **Composer:** 2.9.5+ (older versions are incompatible with PHP 8.5)
-- **Database:** MySQL 8.0
+- **Database:** MySQL 8.0 (development/production) or SQLite (demo)
 - **Frontend:** Blade templates (no starter kit), Tailwind CSS via Vite
-- **Environment:** Docker (PHP-FPM, Nginx, MySQL, Node for asset builds)
+- **Environment:** Docker (development) or bare metal with Nginx + PHP-FPM (production)
 
-## Quick Start
+## Quick Start (Docker — Development)
 
 Start the Docker environment:
 
@@ -140,6 +140,24 @@ cd laravel && npm install && npm run build && cd ..
 ```
 
 Access the app at `http://localhost:8010`.
+
+## Demo Deployment (Bare Metal — Production)
+
+A one-command setup script is included for deploying a read-only demo instance on a fresh Ubuntu server:
+
+```bash
+chmod +x docs/setup-demo.sh
+sudo docs/setup-demo.sh
+```
+
+The script handles everything: creates a dedicated service user, installs PHP 8.5 + Nginx, clones the repo, builds the frontend, configures SQLite with demo seed data, and sets up the site with firewall rules. After running, just point your DNS and install an SSL certificate:
+
+```bash
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d your-domain.com
+```
+
+Demo mode enables a read-only middleware that blocks all write operations, displays a warning banner on every page, and uses fictional seed data. Set `DEMO_MODE=true` in `.env` to enable.
 
 ## Setup
 
@@ -219,6 +237,7 @@ Detailed technical documentation lives in the [`docs/`](docs/) directory:
 - [Frontend](docs/04-frontend.md) — Tailwind/Vite setup, Blade templates, view structure, UI conventions
 - [AI Development Notes](docs/05-ai-development-notes.md) — conventions for AI-assisted development with Claude
 - [Planned Features](docs/06-planned-features.md) — future feature roadmap
+- [Demo Setup Script](docs/setup-demo.sh) — one-command deployment for a public demo instance
 
 ## Disclaimer
 
