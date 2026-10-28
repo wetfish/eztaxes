@@ -1,0 +1,21 @@
+# Only what the images need is sent to Docker's builder, and never secrets
+
+.git
+.dockerignore
+Dockerfile
+docker-compose*.yml
+docs
+legacy
+
+**/.env
+**/.env.*
+
+laravel/node_modules
+laravel/vendor
+laravel/public/build
+laravel/public/hot
+laravel/storage
+laravel/bootstrap/cache/*.php
+laravel/database/*.sqlite
+laravel/tests
+laravel/.phpunit.cache

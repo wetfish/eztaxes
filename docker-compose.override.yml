@@ -1,0 +1,53 @@
+# Local development: runs the code from this checkout instead of the images,
+# publishes ports, and runs its own database. Docker Compose reads this file
+# automatically; deploys on wetfish/server leave it out.
+
+# Shared by the php and migrate services
+x-local: &local
+  user: "${UID:-1000}:${GID:-1000}"
+  environment:
+    APP_ENV: local
+    APP_DEBUG: "true"
+    LOG_CHANNEL: stack
+    DB_HOST: db
+  volumes:
+    - ./:/var/www
+
+services:
+  nginx:
+    ports:
+      - "8010:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  php:
+    <<: *local
+
+  migrate:
+    <<: *local
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # The same MariaDB version wetfish/server runs
+  db:
+    image: mariadb:12.3.3
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: eztaxes
+      MARIADB_USER: eztaxes
+      MARIADB_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: secret
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      start_period: 30s
+    ports:
+      - "3446:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+
+volumes:
+  # Not the old MySQL volume, dbdata, which MariaDB can't read
+  mariadb:

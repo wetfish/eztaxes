@@ -1,49 +1,55 @@
+# EzTaxes as a server runs it, from images built from this repository.
+# Docker Compose adds docker-compose.override.yml for local development;
+# deploys on wetfish/server leave it out.
+
+# Shared by the php and migrate services
+x-laravel: &laravel
+  build:
+    context: .
+    target: php
+  environment:
+    # Real environment variables take precedence over laravel/.env, so these
+    # hold on every server whatever the env file says
+    APP_ENV: production
+    APP_DEBUG: "false"
+    DB_CONNECTION: mariadb
+    LOG_CHANNEL: stderr
+    SESSION_DRIVER: file
+    CACHE_STORE: file
+    QUEUE_CONNECTION: sync
+  volumes:
+    # Not tracked in the repository; wetfish/server writes it from setup.conf
+    - type: bind
+      source: ./laravel/.env
+      target: /var/www/laravel/.env
+      read_only: true
+      bind:
+        create_host_path: false
+
 services:
-  app:
+  # Serves the public directory and passes PHP requests on
+  nginx:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: eztaxes-app
+      target: nginx
     restart: unless-stopped
-    working_dir: /var/www/laravel
-    user: "${UID:-1000}:${GID:-1000}"
-    volumes:
-      - ./:/var/www
-    networks:
-      - eztaxes
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/up"]
+      interval: 30s
+      # Fails while PHP waits for migrations, which doesn't count yet
+      start_period: 120s
+      start_interval: 2s
 
-  nginx:
-    image: nginx:alpine
-    container_name: eztaxes-nginx
+  # PHP-FPM, started once the migrations have finished
+  php:
+    <<: *laravel
     restart: unless-stopped
-    ports:
-      - "8010:80"
-    volumes:
-      - ./:/var/www
-      - ./docker/nginx:/etc/nginx/conf.d
-    networks:
-      - eztaxes
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
-  db:
-    image: mysql:8.0
-    container_name: eztaxes-db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: eztaxes
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_PASSWORD: secret
-      MYSQL_USER: eztaxes
-    ports:
-      - "3446:3306"
-    volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - eztaxes
-
-networks:
-  eztaxes:
-    driver: bridge
-
-volumes:
-  dbdata:
-    driver: local
+  # Runs the migrations and seeders, then exits
+  migrate:
+    <<: *laravel
+    command: ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force"]
+    restart: "no"
