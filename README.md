@@ -183,6 +183,7 @@ From the host machine, the database is accessible on port `3446` (mapped to avoi
 The `--seed` flag runs the DatabaseSeeder which creates:
 - Default bucket groups (Client Income, Operating Expenses, Payroll, Assets, Ignored)
 - Built-in CSV templates for Gusto Employee Payroll, Gusto US Contractors, Gusto International Contractors, CashApp Crypto, and Coinbase Gain/Loss
+- With `DEMO_MODE=true`, fictional demo data, added only while the database has no tax years
 
 The seeders are idempotent and safe to re-run.
 
