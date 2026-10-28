@@ -10,6 +10,8 @@ npm run build
 
 Re-run after modifying CSS or Blade templates. There is no `npm run dev` or hot-reload setup.
 
+The `Dockerfile` runs the same build when it builds the images, so servers never use assets built on a developer's machine. `public/build` is not committed.
+
 ## Layout
 
 All pages extend `layouts/app.blade.php`, which provides the navigation bar with links to Tax Years, Payroll, Crypto, Buckets, and CSV Templates. The "Import CSV" button is styled as a prominent button on the right side of the nav bar, separate from the regular text links.

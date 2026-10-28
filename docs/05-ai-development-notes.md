@@ -38,21 +38,21 @@ When providing multiple files with the same filename (e.g., multiple `index.blad
 
 ## Artisan Commands
 
-All Laravel artisan commands should be run via Docker Compose. The `app` container's working directory is already set to the Laravel project root:
+All Laravel artisan commands should be run via Docker Compose. The `php` container's working directory is already set to the Laravel project root:
 
 ```bash
-docker compose exec app php artisan make:migration create_example_table
-docker compose exec app php artisan migrate
+docker compose exec php php artisan make:migration create_example_table
+docker compose exec php php artisan migrate
 ```
 
 ## Migration Generation
 
-When generating multiple migrations in sequence, add `sleep 1` between commands to ensure unique timestamps. MySQL requires referenced tables to exist before foreign keys point to them, and alphabetical ordering of same-timestamp migrations can cause failures:
+When generating multiple migrations in sequence, add `sleep 1` between commands to ensure unique timestamps. MariaDB requires referenced tables to exist before foreign keys point to them, and alphabetical ordering of same-timestamp migrations can cause failures:
 
 ```bash
-docker compose exec app php artisan make:migration create_first_table
+docker compose exec php php artisan make:migration create_first_table
 sleep 1
-docker compose exec app php artisan make:migration create_second_table
+docker compose exec php php artisan make:migration create_second_table
 ```
 
 ## Page References

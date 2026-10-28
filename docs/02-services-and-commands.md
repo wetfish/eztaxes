@@ -84,7 +84,7 @@ Payroll data is tracked in a separate module and is NOT included in bank transac
 All commands are run via Docker Compose:
 
 ```bash
-docker compose exec app php artisan <command>
+docker compose exec php php artisan <command>
 ```
 
 ### `taxyear:create {year}`

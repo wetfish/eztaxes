@@ -26,8 +26,6 @@ WORKDIR /var/www/laravel
 
 FROM php-base AS vendor
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
-
 # The lock file first, so Docker's cache skips the download until it changes
 COPY laravel/composer.json laravel/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist

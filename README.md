@@ -115,22 +115,18 @@ Built-in templates are seeded on setup for all six supported formats. The confir
 - **Framework:** Laravel 12.12.1 (released March 10, 2026; Laravel 12 initially released February 24, 2025)
 - **PHP:** 8.5 (Laravel 12 requires 8.2+; PHP 8.5 compatibility added in Laravel 12.8+)
 - **Composer:** 2.9.5+ (older versions are incompatible with PHP 8.5)
-- **Database:** MySQL 8.0 (development/production) or SQLite (demo)
+- **Database:** MariaDB 12.3, the version [wetfish/server](https://github.com/wetfish/server) runs
 - **Frontend:** Blade templates (no starter kit), Tailwind CSS via Vite
-- **Environment:** Docker (development) or bare metal with Nginx + PHP-FPM (production)
+- **Environment:** Docker Compose, for development and on servers
 
 ## Quick Start (Docker — Development)
 
-Start the Docker environment:
+Create the env file, install the Composer packages, and generate an app key:
 
 ```bash
-docker compose up -d
-```
-
-Run migrations and seed default data:
-
-```bash
-docker compose exec app php artisan migrate --seed
+cp laravel/.env.example laravel/.env
+docker compose run --rm --no-deps php composer install
+docker compose run --rm --no-deps php php artisan key:generate
 ```
 
 Build frontend assets (run from host machine):
@@ -139,23 +135,23 @@ Build frontend assets (run from host machine):
 cd laravel && npm install && npm run build && cd ..
 ```
 
-Access the app at `http://localhost:8010`.
-
-## Demo Deployment (Bare Metal — Production)
-
-A one-command setup script is included for deploying a read-only demo instance on a fresh Ubuntu server:
+Start the Docker environment:
 
 ```bash
-chmod +x docs/setup-demo.sh
-sudo docs/setup-demo.sh
+docker compose up -d --build
 ```
 
-The script handles everything: creates a dedicated service user, installs PHP 8.5 + Nginx, clones the repo, builds the frontend, configures SQLite with demo seed data, and sets up the site with firewall rules. After running, just point your DNS and install an SSL certificate:
+Starting runs the migrations and seeders in the `migrate` container before PHP starts. Access the app at `http://localhost:8010`.
+
+## Demo Deployment (wetfish/server)
+
+The live demo runs on [wetfish/server](https://github.com/wetfish/server), which builds this repository's images on the server and deploys them whenever the branch it deploys is pushed. `setup.conf` lists the settings it fills in. On a server running wetfish/server:
 
 ```bash
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d your-domain.com
+./add-project.sh --name eztaxes --repo https://github.com/wetfish/eztaxes.git --domain eztaxes.wetfish.net --branch main
 ```
+
+It asks whether to turn on demo mode; answer `true`. Then add the webhook it prints in this repository's settings on GitHub.
 
 Demo mode enables a read-only middleware that blocks all write operations, displays a warning banner on every page, and uses fictional seed data. Set `DEMO_MODE=true` in `.env` to enable.
 
@@ -163,16 +159,12 @@ Demo mode enables a read-only middleware that blocks all write operations, displ
 
 ### Environment configuration
 
-Update `laravel/.env` to match the Docker container names:
+`docker-compose.override.yml` sets the local database host, `APP_ENV=local`, and `APP_DEBUG=true`. Real environment variables take precedence over `laravel/.env`, so those values in it have no effect. The rest come from `laravel/.env`, whose database settings match the `db` container:
 
 ```ini
-DB_CONNECTION=mysql
-DB_HOST=eztaxes-db
-DB_PORT=3306
 DB_DATABASE=eztaxes
 DB_USERNAME=eztaxes
 DB_PASSWORD=secret
-SESSION_DRIVER=file
 ALPHAVANTAGE_API_KEY=your_key_here
 ```
 
@@ -180,30 +172,12 @@ From the host machine, the database is accessible on port `3446` (mapped to avoi
 
 ### Seeded Data
 
-The `--seed` flag runs the DatabaseSeeder which creates:
+The `migrate` container runs the DatabaseSeeder each time it starts, which creates:
 - Default bucket groups (Client Income, Operating Expenses, Payroll, Assets, Ignored)
 - Built-in CSV templates for Gusto Employee Payroll, Gusto US Contractors, Gusto International Contractors, CashApp Crypto, and Coinbase Gain/Loss
 - With `DEMO_MODE=true`, fictional demo data, added only while the database has no tax years
 
 The seeders are idempotent and safe to re-run.
-
-### PHP dependencies
-
-Laravel 12 requires the following PHP extensions: Ctype, cURL, DOM, Fileinfo, Filter, Hash, Mbstring, OpenSSL, PCRE, PDO, Session, Tokenizer, and XML. Several of these are bundled with `php8.5-common`.
-
-Install all required dependencies on Ubuntu/Debian:
-
-```bash
-sudo apt install php8.5-cli php8.5-common php8.5-curl php8.5-mbstring php8.5-xml php8.5-bcmath php8.5-zip php8.5-mysql php8.5-fpm unzip -y
-```
-
-### Composer
-
-Composer 2.9.5+ is required. Older versions have a known incompatibility with PHP 8.5 (`stream_context_create()` error in `RemoteFilesystem`). Upgrade with:
-
-```bash
-composer self-update
-```
 
 ### Tailwind CSS
 
@@ -217,16 +191,22 @@ Re-run `npm run build` after modifying CSS or Blade templates.
 
 ## Docker Environment
 
-| Container | Image | Purpose | Ports |
-|-----------|-------|---------|-------|
-| eztaxes-app | php:8.5-fpm (custom) | PHP-FPM with Laravel extensions, Composer, Redis | 9000 (internal) |
-| eztaxes-nginx | nginx:alpine | Serves `laravel/public/`, proxies PHP to app | 8010 → 80 |
-| eztaxes-db | mysql:8.0 | MySQL database | 3446 → 3306 |
+`docker-compose.yml` describes EzTaxes as a server runs it, from images the `Dockerfile` builds: the code, Composer packages, and built assets are copied in, and nothing is mounted from the repository. `docker-compose.override.yml`, which Docker Compose reads automatically and servers leave out, adds what local development needs: the code mounted from this checkout, published ports, and a database.
 
-| Config File | Purpose |
-|-------------|---------|
+| Service | Image | Purpose | Ports (local) |
+|---------|-------|---------|---------------|
+| nginx | nginx:1.30.6-alpine (custom) | Serves `laravel/public/`, passes PHP requests to php | 8010 → 80 |
+| php | php:8.5.12-fpm (custom) | PHP-FPM with Laravel's extensions and Composer | 9000 (internal) |
+| migrate | Same as php | Runs migrations and seeders, then exits; php starts once it has finished | None |
+| db | mariadb:12.3.3 | MariaDB database, local only; servers use wetfish/server's shared database | 3446 → 3306 |
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Builds the php and nginx images, with Composer packages and built assets |
 | `docker/nginx/default.conf` | Nginx server block pointing to `laravel/public` |
 | `docker/php/custom.ini` | PHP overrides (memory_limit = 512M) |
+| `docker/php/entrypoint.sh` | Builds Laravel's caches when a container starts, except in local development |
+| `setup.conf` | The settings wetfish/server fills in for `laravel/.env` |
 
 ## Documentation
 
@@ -238,7 +218,6 @@ Detailed technical documentation lives in the [`docs/`](docs/) directory:
 - [Frontend](docs/04-frontend.md) — Tailwind/Vite setup, Blade templates, view structure, UI conventions
 - [AI Development Notes](docs/05-ai-development-notes.md) — conventions for AI-assisted development with Claude
 - [Planned Features](docs/06-planned-features.md) — future feature roadmap
-- [Demo Setup Script](docs/setup-demo.sh) — one-command deployment for a public demo instance
 
 ## Disclaimer
 
